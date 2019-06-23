@@ -1,0 +1,9 @@
+[package]
+name = "moneroff"
+version = "0.1.0"
+authors = ["Greg Kapka <greg@kapka.co.uk>"]
+edition = "2018"
+
+[dependencies]
+rand = "0.6"
+num-bigint = { version = "0.2.2", features = ["rand"] }
