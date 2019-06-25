@@ -1,4 +1,5 @@
 use crate::constants::MONERO_L;
+use std::str::FromStr;
 use crate::error::AppError;
 use crate::types::Key;
 use num_bigint::{BigUint, RandBigInt};
@@ -19,13 +20,13 @@ impl Keys {
         self
     }
 
-    pub fn add_pub_sk(mut self, _pub_sk: Key) -> Self {
-        self.pub_sk = Some(_pub_sk);
+    pub fn add_priv_vk(mut self, _prive_vk: Key) -> Self {
+        self.priv_vk = Some(_prive_vk);
         self
     }
 
-    pub fn add_priv_vk(mut self, _prive_vk: Key) -> Self {
-        self.priv_vk = Some(_prive_vk);
+    pub fn add_pub_sk(mut self, _pub_sk: Key) -> Self {
+        self.pub_sk = Some(_pub_sk);
         self
     }
 
@@ -38,12 +39,12 @@ impl Keys {
         self.priv_sk.expect("No private spend key set in struct!")
     }
 
-    pub fn get_pub_sk(self) -> Key {
-        self.pub_sk.expect("No public spend key set in struct!")
-    }
-
     pub fn get_priv_vk(self) -> Key {
         self.priv_vk.expect("No private view key set in struct!")
+    }
+
+    pub fn get_pub_sk(self) -> Key {
+        self.pub_sk.expect("No public spend key set in struct!")
     }
 
     pub fn get_pub_vk(self) -> Key {
@@ -51,7 +52,10 @@ impl Keys {
     }
 }
 
-pub fn generate_256_bit_random_number() -> BigUint {
-    // TODO: rm pub!
-    rand::thread_rng().gen_biguint(256)
+fn generate_256_bit_random_number() -> Result<BigUint> {
+    Ok(rand::thread_rng().gen_biguint(256))
+}
+
+fn take_modulus_l(_int: BigUint) -> Result<BigUint> {
+    Ok(_int % BigUint::from_str(MONERO_L)?)
 }
