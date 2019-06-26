@@ -1,4 +1,4 @@
-use crate::constants::{MONERO_L, MONERO_L_HEX};
+use crate::constants::{MONERO_L, MONERO_L_HEX, MONERO_G};
 use crate::error::AppError;
 use crate::types::HexKey;
 use num_bigint::{BigUint, RandBigInt, ToBigUint};
@@ -72,6 +72,9 @@ pub fn convert_hex_string_to_big_uint(_hex_str: String) -> Result<BigUint> {
     Ok(BigUint::parse_bytes(_hex_str.as_bytes(), 16)?)
 }
 
+fn multiply_by_g(_x: BigUint) -> Result<BigUint> {
+    Ok(_x * convert_hex_string_to_big_uint(MONERO_G.to_string())?)
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -131,5 +134,19 @@ mod tests {
             .and_then(convert_big_uint_to_hex_string)
             .unwrap();
         assert!(l_converted_to_hex == MONERO_L_HEX);
+    }
+
+    #[test]
+    fn multiplying_by_g() {
+        let monero_g_big_uint = convert_hex_string_to_big_uint(MONERO_G.to_string()).unwrap();
+        let big_uint_0 = ToBigUint::to_biguint(&0).unwrap();
+        let big_uint_1 = ToBigUint::to_biguint(&1).unwrap();
+        let big_uint_2 = ToBigUint::to_biguint(&2).unwrap();
+        let g_multiplied_by_0 = multiply_by_g(big_uint_0.clone()).unwrap();
+        let g_multiplied_by_1 = multiply_by_g(big_uint_1.clone()).unwrap();
+        let g_multiplied_by_2 = multiply_by_g(big_uint_2.clone()).unwrap();
+        assert!(g_multiplied_by_0 == big_uint_0);
+        assert!(g_multiplied_by_1 == monero_g_big_uint);
+        assert!(g_multiplied_by_2 == monero_g_big_uint.clone() + monero_g_big_uint);
     }
 }
