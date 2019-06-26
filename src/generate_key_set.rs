@@ -72,4 +72,56 @@ pub fn convert_hex_string_to_big_uint(_hex_str: String) -> Result<BigUint> {
     Ok(BigUint::parse_bytes(_hex_str.as_bytes(), 16)?)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn converting_l_to_big_uint() {
+        let x: BigUint = convert_l_to_big_uint().unwrap();
+        assert!(x > ToBigUint::to_biguint(&0).unwrap());
+    }
+
+    #[test]
+    fn generating_256_bit_random_number() {
+        let x: BigUint = generate_256_bit_random_number().unwrap();
+        assert!(x > ToBigUint::to_biguint(&0).unwrap());
+    }
+
+    #[test]
+    fn taking_modulus_l() {
+        let x: BigUint = generate_256_bit_random_number()
+            .and_then(take_modulus_l)
+            .unwrap();
+        assert!(x > ToBigUint::to_biguint(&0).unwrap());
+        assert!(x <= BigUint::from_str(MONERO_L).unwrap());
+    }
+
+    #[test]
+    fn converting_hex_string_to_big_uint() {
+        let expected_big_uint = ToBigUint::to_biguint(&12648430).unwrap();
+        let hex_string = "c0ffee".to_string();
+        let big_uint = convert_hex_string_to_big_uint(hex_string).unwrap();
+        assert!(expected_big_uint == big_uint);
+    }
+
+    #[test]
+    fn converting_big_uint_to_hex_string() {
+        let int = 12648430;
+        let expected_hex_string = "c0ffee".to_string();
+        let big_uint = ToBigUint::to_biguint(&int).unwrap();
+        let hex_string = convert_big_uint_to_hex_string(big_uint).unwrap();
+        assert!(expected_hex_string == hex_string);
+    }
+
+    #[test]
+    fn generate_key_convert_to_hex_and_back_again() {
+        let key_big_uint = generate_256_bit_random_number()
+            .and_then(take_modulus_l)
+            .unwrap();
+        let expected_key_big_uint = key_big_uint.clone();
+        let key_hex_string = convert_big_uint_to_hex_string(key_big_uint).unwrap();
+        let key_converted_back = convert_hex_string_to_big_uint(key_hex_string).unwrap();
+        assert!(expected_key_big_uint == key_converted_back);
+    }
 }
