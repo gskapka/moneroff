@@ -1,9 +1,12 @@
-use crate::constants::{MONERO_L, MONERO_L_HEX, MONERO_G};
+use crate::constants::{MONERO_G, MONERO_L, MONERO_L_HEX};
 use crate::error::AppError;
-use crate::types::HexKey;
+use crate::types::{Hash, HexKey};
+
+use hex;
 use num_bigint::{BigUint, RandBigInt, ToBigUint};
 use std::result;
 use std::str::FromStr;
+use tiny_keccak::Keccak;
 
 type Result<T> = result::Result<T, AppError>;
 
@@ -75,6 +78,15 @@ pub fn convert_hex_string_to_big_uint(_hex_str: String) -> Result<BigUint> {
 fn multiply_by_g(_x: BigUint) -> Result<BigUint> {
     Ok(_x * convert_hex_string_to_big_uint(MONERO_G.to_string())?)
 }
+
+fn keccak_hash_big_uint(_big_uint: BigUint) -> Result<Hash> {
+    let mut res: Hash = [0; 32];
+    let mut keccak256 = Keccak::new_keccak256();
+    keccak256.update(&_big_uint.to_bytes_be());
+    keccak256.finalize(&mut res);
+    Ok(res)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -148,5 +160,16 @@ mod tests {
         assert!(g_multiplied_by_0 == big_uint_0);
         assert!(g_multiplied_by_1 == monero_g_big_uint);
         assert!(g_multiplied_by_2 == monero_g_big_uint.clone() + monero_g_big_uint);
+    }
+
+    #[test]
+    fn keccak_hashing_big_uint() {
+        let int: u16 = 1337;
+        let big_uint = ToBigUint::to_biguint(&int).unwrap();
+        let hashed_big_uint = keccak_hash_big_uint(big_uint).unwrap();
+        // NOTE: web3.utils.keccak256("0x0539")
+        // Where: "0x0539" == 1337 as hex (padded)
+        let expected_hash = "faae50e630355f536a35f931b941e1578227e30c2cdfaa69c59c264484d40ed8";
+        assert!(expected_hash == hex::encode(hashed_big_uint));
     }
 }
