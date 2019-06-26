@@ -1,4 +1,4 @@
-use crate::constants::MONERO_L;
+use crate::constants::{MONERO_L, MONERO_L_HEX};
 use crate::error::AppError;
 use crate::types::HexKey;
 use num_bigint::{BigUint, RandBigInt, ToBigUint};
@@ -123,5 +123,13 @@ mod tests {
         let key_hex_string = convert_big_uint_to_hex_string(key_big_uint).unwrap();
         let key_converted_back = convert_hex_string_to_big_uint(key_hex_string).unwrap();
         assert!(expected_key_big_uint == key_converted_back);
+    }
+
+    #[test]
+    fn compare_string_l_to_hex_l() {
+        let l_converted_to_hex = convert_l_to_big_uint()
+            .and_then(convert_big_uint_to_hex_string)
+            .unwrap();
+        assert!(l_converted_to_hex == MONERO_L_HEX);
     }
 }
