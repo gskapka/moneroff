@@ -97,6 +97,7 @@ fn generate_priv_sk() -> Result<HexKey> {
         .and_then(convert_big_uint_to_hex_string)
 }
 #[cfg(test)]
+#[allow(unused_doc_comments)]
 mod tests {
     use super::*;
 
@@ -176,8 +177,12 @@ mod tests {
         let int: u16 = 1337;
         let big_uint = ToBigUint::to_biguint(&int).unwrap();
         let hashed_big_uint = keccak256_hash_big_uint(big_uint).unwrap();
-        // NOTE: web3.utils.keccak256("0x0539")
-        // Where: "0x0539" == 1337 as hex (padded)
+        /**
+         * NOTE:
+         * let hash = web3.utils.keccak256(numAsHex)
+         * let numAsHex = web3.utils.padLeft(web3.utils.numberToHex(1337), 4)
+         * web3.utils.keccak256("0x0539")
+         */
         let expected_hash = "faae50e630355f536a35f931b941e1578227e30c2cdfaa69c59c264484d40ed8";
         assert!(expected_hash == hex::encode(hashed_big_uint));
     }
@@ -187,8 +192,12 @@ mod tests {
         let int: u16 = 1337;
         let big_uint = ToBigUint::to_biguint(&int).unwrap();
         let hashed_big_uint = keccak256_hash_big_uint(big_uint).unwrap();
-        // NOTE: web3.utils.toBN(hash).toString()
-        // Where: hash = web3.utils.keccak256("0x0539")
+        /**
+         * NOTE:
+         * let hash = web3.utils.keccak256(numAsHex)
+         * let numAsHex = web3.utils.padLeft(web3.utils.numberToHex(1337), 4)
+         * web3.utils.toBN(hash).toString()
+         */
         let expected_num_str = "113386201880660458774621863012707052048509714470544993940678801196504088579800".to_string();
         let expected_num_big_uint = BigUint::from_str(&expected_num_str).unwrap();
         let result = cast_hash_to_big_uint(hashed_big_uint).unwrap();
