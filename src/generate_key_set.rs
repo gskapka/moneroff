@@ -90,6 +90,12 @@ fn keccak_hash_big_uint(_big_uint: BigUint) -> Result<Hash> {
 fn cast_hash_to_big_uint(_hash: Hash) -> Result<BigUint> {
     Ok(BigUint::from_bytes_be(&_hash))
 }
+
+fn generate_priv_sk() -> Result<HexKey> {
+    generate_256_bit_random_number()
+        .and_then(take_modulus_l)
+        .and_then(convert_big_uint_to_hex_string)
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -187,5 +193,12 @@ mod tests {
         let expected_num_big_uint = BigUint::from_str(&expected_num_str).unwrap();
         let result = cast_hash_to_big_uint(hashed_big_uint).unwrap();
         assert!(result == expected_num_big_uint);
+    }
+
+    #[test]
+    fn should_generate_random_private_spend_key() {
+        let key = generate_priv_sk().unwrap();
+        let chars = key.chars().count();
+        assert!(chars == 64);
     }
 }
