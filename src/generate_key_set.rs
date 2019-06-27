@@ -87,6 +87,14 @@ fn keccak256_hash_big_uint(_big_uint: BigUint) -> Result<Hash> {
     Ok(res)
 }
 
+fn keccak256_hash_hex_key(_hex_key: HexKey) -> Result<Hash> {
+    let mut res: Hash = [0; 32];
+    let mut keccak256 = Keccak::new_keccak256();
+    keccak256.update(&hex::decode(_hex_key)?[..]);
+    keccak256.finalize(&mut res);
+    Ok(res)
+}
+
 fn cast_hash_to_big_uint(_hash: Hash) -> Result<BigUint> {
     Ok(BigUint::from_bytes_be(&_hash))
 }
@@ -209,5 +217,18 @@ mod tests {
         let key = generate_priv_sk().unwrap();
         let chars = key.chars().count();
         assert!(chars == 64);
+    }
+
+    #[test]
+    fn should_hash_a_hex_key_correctly() {
+        /**
+         * NOTE:
+         * expected_hash = web3.utils.toBN(hex_key_string)
+         */
+        let hex_key_string: HexKey = "faae50e630355f536a35f931b941e1578227e30c2cdfaa69c59c264484d40ed8".to_string();
+        let expected_hash = "532bc0ce4f17550956943d3b883866c623be7f59cf07a0ec890ea037a10ab792".to_string();
+        let hashed_hex_key = keccak256_hash_hex_key(hex_key_string).unwrap();
+        let result = hex::encode(hashed_hex_key);
+        assert!(result == expected_hash )
     }
 }
