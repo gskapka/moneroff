@@ -87,6 +87,14 @@ fn keccak256_hash_bytes(_bytes: &[u8]) -> Result<Hash> {
     Ok(res)
 }
 
+fn keccak256_hash_big_uint(_big_uint: BigUint) -> Result<Hash> {
+    keccak256_hash_bytes(&_big_uint.to_bytes_be())
+}
+
+fn keccak256_hash_hex_key(_hex_key: HexKey) -> Result<Hash> {
+    keccak256_hash_bytes(&hex::decode(_hex_key)?[..])
+}
+
 fn cast_hash_to_big_uint(_hash: Hash) -> Result<BigUint> {
     Ok(BigUint::from_bytes_be(&_hash))
 }
