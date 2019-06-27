@@ -79,18 +79,10 @@ fn multiply_by_g(_x: BigUint) -> Result<BigUint> {
     Ok(_x * convert_hex_string_to_big_uint(MONERO_G.to_string())?)
 }
 
-fn keccak256_hash_big_uint(_big_uint: BigUint) -> Result<Hash> {
+fn keccak256_hash_bytes(_bytes: &[u8]) -> Result<Hash> {
     let mut res: Hash = [0; 32];
     let mut keccak256 = Keccak::new_keccak256();
-    keccak256.update(&_big_uint.to_bytes_be());
-    keccak256.finalize(&mut res);
-    Ok(res)
-}
-
-fn keccak256_hash_hex_key(_hex_key: HexKey) -> Result<Hash> {
-    let mut res: Hash = [0; 32];
-    let mut keccak256 = Keccak::new_keccak256();
-    keccak256.update(&hex::decode(_hex_key)?[..]);
+    keccak256.update(_bytes);
     keccak256.finalize(&mut res);
     Ok(res)
 }
@@ -217,6 +209,20 @@ mod tests {
         let key = generate_priv_sk().unwrap();
         let chars = key.chars().count();
         assert!(chars == 64);
+    }
+
+    #[test]
+    fn should_hash_bytes_correctly() {
+        /**
+         * NOTE:
+         * expected_hash = web3.utils.toBN(hex_key_string)
+         */
+        let hex_key_string: HexKey = "faae50e630355f536a35f931b941e1578227e30c2cdfaa69c59c264484d40ed8".to_string();
+        let expected_hash = "532bc0ce4f17550956943d3b883866c623be7f59cf07a0ec890ea037a10ab792".to_string();
+        let hex_key_bytes = &hex::decode(hex_key_string).unwrap()[..];
+        let hashed_bytes = keccak256_hash_bytes(&hex_key_bytes).unwrap();
+        let result = hex::encode(hashed_bytes);
+        assert!(result == expected_hash )
     }
 
     #[test]
