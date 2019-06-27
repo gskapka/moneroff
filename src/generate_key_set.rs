@@ -67,8 +67,8 @@ fn take_modulus_l(_int: BigUint) -> Result<BigUint> {
     convert_l_to_big_uint().and_then(|_l| Ok(_int % _l))
 }
 
-fn convert_big_uint_to_hex_string(_int: BigUint) -> Result<HexKey> {
-    Ok(_int.to_str_radix(16))
+fn convert_big_uint_to_hex_string(_big_uint: BigUint) -> Result<HexKey> {
+    Ok(hex::encode(_big_uint.to_bytes_be()))
 }
 
 pub fn convert_hex_string_to_big_uint(_hex_str: String) -> Result<BigUint> {
