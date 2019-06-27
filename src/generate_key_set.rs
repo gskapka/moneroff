@@ -87,6 +87,9 @@ fn keccak_hash_big_uint(_big_uint: BigUint) -> Result<Hash> {
     Ok(res)
 }
 
+fn cast_hash_to_big_uint(_hash: Hash) -> Result<BigUint> {
+    Ok(BigUint::from_bytes_be(&_hash))
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -171,5 +174,18 @@ mod tests {
         // Where: "0x0539" == 1337 as hex (padded)
         let expected_hash = "faae50e630355f536a35f931b941e1578227e30c2cdfaa69c59c264484d40ed8";
         assert!(expected_hash == hex::encode(hashed_big_uint));
+    }
+
+    #[test]
+    fn should_cast_hash_to_big_uint() {
+        let int: u16 = 1337;
+        let big_uint = ToBigUint::to_biguint(&int).unwrap();
+        let hashed_big_uint = keccak_hash_big_uint(big_uint).unwrap();
+        // NOTE: web3.utils.toBN(hash).toString()
+        // Where: hash = web3.utils.keccak256("0x0539")
+        let expected_num_str = "113386201880660458774621863012707052048509714470544993940678801196504088579800".to_string();
+        let expected_num_big_uint = BigUint::from_str(&expected_num_str).unwrap();
+        let result = cast_hash_to_big_uint(hashed_big_uint).unwrap();
+        assert!(result == expected_num_big_uint);
     }
 }
