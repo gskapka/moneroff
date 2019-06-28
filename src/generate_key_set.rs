@@ -66,6 +66,14 @@ fn convert_256_bit_big_uint_to_byte_arr(big_uint: BigUint) -> Result<[u8; 32]> {
     Ok(array)
 }
 
+fn convert_hex_key_to_32_byte_arr(hex_key: HexKey) -> Result<[u8; 32]> {
+    let decoded_hex = hex::decode(hex_key)?;
+    let mut array = [0; 32];
+    let bytes = &decoded_hex[..array.len()];
+    array.copy_from_slice(&bytes);
+    Ok(array)
+}
+
 fn convert_32_byte_arr_to_scalar_mod_order(bytes: [u8; 32]) -> Result<Scalar> {
     Ok(Scalar::from_bytes_mod_order(bytes))
 }
@@ -74,13 +82,14 @@ fn convert_keccak256_hash_to_scalar_mod_order(hash: Keccak256Hash) -> Result<Sca
     convert_32_byte_arr_to_scalar_mod_order(hash)
 }
 
+// FIXME: Must we use this as opposed to Scalar::random?
 fn generate_random_scalar() -> Result<Scalar> {
     generate_256_bit_random_number()
         .and_then(convert_256_bit_big_uint_to_byte_arr)
         .and_then(convert_32_byte_arr_to_scalar_mod_order)
 }
 
-fn convert_scalar_to_hex(scalar: Scalar) -> Result<HexKey> {
+fn convert_scalar_to_hex_key(scalar: Scalar) -> Result<HexKey> {
     Ok(hex::encode(scalar.to_bytes()))
 }
 
@@ -98,6 +107,14 @@ fn keccak256_hash_hex_key(hex_key: HexKey) -> Result<Keccak256Hash> {
 
 fn hash_scalar(scalar: Scalar) -> Result<Keccak256Hash> {
     keccak256_hash_bytes(&scalar.to_bytes())
+}
+
+fn convert_canonical_32_byte_arr_to_scalar(byte_arr: [u8; 32]) -> Result<Scalar> {
+    Ok(Scalar::from_canonical_bytes(byte_arr)?)
+}
+
+fn convert_hex_key_to_scalar(hex_key: HexKey) -> Result<Scalar> {
+    convert_hex_key_to_32_byte_arr(hex_key).and_then(convert_canonical_32_byte_arr_to_scalar)
 }
 
 #[cfg(test)]
@@ -148,7 +165,7 @@ mod tests {
     #[test]
     fn should_convert_scalar_to_hex() {
         let result = generate_random_scalar()
-            .and_then(convert_scalar_to_hex)
+            .and_then(convert_scalar_to_hex_key)
             .unwrap();
         assert!(result.chars().count() == 64);
     }
@@ -187,8 +204,7 @@ mod tests {
     #[test]
     fn should_hash_a_scalar_correctly() {
         let scalar = Scalar::one();
-        let scalar_copy = scalar.clone();
-        let scalar_hex = convert_scalar_to_hex(scalar_copy).unwrap();
+        let scalar_hex = convert_scalar_to_hex_key(scalar).unwrap();
         /**
          * NOTE:
          * expected_hash = web3.utils.keccak256(`0x${scalar_hex}`)
@@ -199,5 +215,33 @@ mod tests {
         let result = hex::encode(hashed_scalar);
         assert!(result == expected_hash)
     }
-    //println!("{:?}", result);
+
+    #[test]
+    fn should_convert_canonical_bytes_to_scalar() {
+        let scalar = generate_random_scalar().unwrap();
+        let scalar_clone = scalar.clone();
+        let scalar_as_hex = convert_scalar_to_hex_key(scalar_clone).unwrap();
+        let result = convert_canonical_32_byte_arr_to_scalar(scalar.to_bytes()).unwrap();
+        let result_as_hex = convert_scalar_to_hex_key(result).unwrap();
+        assert!(result_as_hex == scalar_as_hex);
+    }
+
+    #[test]
+    fn should_convert_hex_key_to_byte_arr() {
+        let result = generate_random_scalar()
+            .and_then(convert_scalar_to_hex_key)
+            .and_then(convert_hex_key_to_32_byte_arr)
+            .unwrap();
+        assert!(result.len() == 32)
+    }
+
+    #[test]
+    fn should_convert_scalar_to_hex_and_back_again() {
+        let scalar = generate_random_scalar().unwrap();
+        let scalar_clone = scalar.clone();
+        let result = convert_scalar_to_hex_key(scalar)
+            .and_then(convert_hex_key_to_scalar)
+            .unwrap();
+        assert!(scalar == result)
+    }
 }
