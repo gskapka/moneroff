@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use crate::types::{Hash, HexKey};
+use crate::types::{HexKey, Keccak256Hash};
 
 use curve25519_dalek::scalar::Scalar;
 use hex;
@@ -70,6 +70,10 @@ fn convert_32_byte_arr_to_scalar_mod_order(bytes: [u8; 32]) -> Result<Scalar> {
     Ok(Scalar::from_bytes_mod_order(bytes))
 }
 
+fn convert_keccak256_hash_to_scalar_mod_order(hash: Keccak256Hash) -> Result<Scalar> {
+    convert_32_byte_arr_to_scalar_mod_order(hash)
+}
+
 fn generate_random_scalar() -> Result<Scalar> {
     generate_256_bit_random_number()
         .and_then(convert_256_bit_big_uint_to_byte_arr)
@@ -78,6 +82,22 @@ fn generate_random_scalar() -> Result<Scalar> {
 
 fn convert_scalar_to_hex(scalar: Scalar) -> Result<HexKey> {
     Ok(hex::encode(scalar.to_bytes()))
+}
+
+fn keccak256_hash_bytes(bytes: &[u8]) -> Result<Keccak256Hash> {
+    let mut res: Keccak256Hash = [0; 32];
+    let mut keccak256 = Keccak::new_keccak256();
+    keccak256.update(bytes);
+    keccak256.finalize(&mut res);
+    Ok(res)
+}
+
+fn keccak256_hash_hex_key(hex_key: HexKey) -> Result<Keccak256Hash> {
+    keccak256_hash_bytes(&hex::decode(hex_key)?[..])
+}
+
+fn hash_scalar(scalar: Scalar) -> Result<Keccak256Hash> {
+    keccak256_hash_bytes(&scalar.to_bytes())
 }
 
 #[cfg(test)]
@@ -100,12 +120,23 @@ mod tests {
     }
 
     #[test]
-    fn should_convert_32_byte_arr_to_scalar() {
+    fn should_convert_32_byte_arr_to_scalar_mod_order() {
         let result = generate_256_bit_random_number()
             .and_then(convert_256_bit_big_uint_to_byte_arr)
             .and_then(convert_32_byte_arr_to_scalar_mod_order)
             .unwrap();
         assert!(result.to_bytes().len() == 32);
+        assert!(result.is_canonical() == true)
+    }
+
+    #[test]
+    fn should_convert_keccak256_hash_to_scalar_mod_order() {
+        let result = generate_random_scalar()
+            .and_then(hash_scalar)
+            .and_then(convert_keccak256_hash_to_scalar_mod_order)
+            .unwrap();
+        assert!(result.to_bytes().len() == 32);
+        assert!(result.is_canonical() == true)
     }
 
     #[test]
@@ -121,4 +152,52 @@ mod tests {
             .unwrap();
         assert!(result.chars().count() == 64);
     }
+
+    fn should_hash_bytes_correctly() {
+        /**
+         * NOTE:
+         * expected_hash = web3.utils.keccak26(web3.utils.toBN(hex_key_string))
+         */
+        let hex_key_string: HexKey =
+            "faae50e630355f536a35f931b941e1578227e30c2cdfaa69c59c264484d40ed8".to_string();
+        let expected_hash =
+            "532bc0ce4f17550956943d3b883866c623be7f59cf07a0ec890ea037a10ab792".to_string();
+        let hex_key_bytes = &hex::decode(hex_key_string).unwrap()[..];
+        let hashed_bytes = keccak256_hash_bytes(&hex_key_bytes).unwrap();
+        let result = hex::encode(hashed_bytes);
+        assert!(result == expected_hash);
+    }
+
+    #[test]
+    fn should_hash_a_hex_key_correctly() {
+        /**
+         * NOTE:
+         * const str = web3.utils.toBN(hex_key_string).toString()
+         * expected_hash = web3.utils.keccak26(str)
+         */
+        let hex_key_string: HexKey =
+            "faae50e630355f536a35f931b941e1578227e30c2cdfaa69c59c264484d40ed8".to_string();
+        let expected_hash =
+            "532bc0ce4f17550956943d3b883866c623be7f59cf07a0ec890ea037a10ab792".to_string();
+        let hashed_hex_key = keccak256_hash_hex_key(hex_key_string).unwrap();
+        let result = hex::encode(hashed_hex_key);
+        assert!(result == expected_hash)
+    }
+
+    #[test]
+    fn should_hash_a_scalar_correctly() {
+        let scalar = Scalar::one();
+        let scalar_copy = scalar.clone();
+        let scalar_hex = convert_scalar_to_hex(scalar_copy).unwrap();
+        /**
+         * NOTE:
+         * expected_hash = web3.utils.keccak256(`0x${scalar_hex}`)
+         */
+        let expected_hash =
+            "48078cfed56339ea54962e72c37c7f588fc4f8e5bc173827ba75cb10a63a96a5".to_string();
+        let hashed_scalar = hash_scalar(scalar).unwrap();
+        let result = hex::encode(hashed_scalar);
+        assert!(result == expected_hash)
+    }
+    //println!("{:?}", result);
 }
