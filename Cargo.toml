@@ -8,4 +8,5 @@ edition = "2018"
 rand = "0.6"
 hex = "0.3.2"
 tiny-keccak = "1.5"
+curve25519-dalek = "1"
 num-bigint = { version = "0.2.2", features = ["rand"] }
