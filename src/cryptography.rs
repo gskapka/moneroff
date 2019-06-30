@@ -2,6 +2,8 @@ use crate::error::AppError;
 use crate::types::{HexKey, Keccak256Hash};
 
 use curve25519_dalek::scalar::Scalar;
+use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
+use curve25519_dalek::constants::ED25519_BASEPOINT_POINT;
 use hex;
 use num_bigint::{BigUint, RandBigInt, ToBigUint};
 use std::result;
@@ -37,13 +39,13 @@ fn convert_keccak256_hash_to_scalar_mod_order(hash: Keccak256Hash) -> Result<Sca
     convert_32_byte_arr_to_scalar_mod_order(hash)
 }
 
-fn generate_random_scalar() -> Result<Scalar> {
+pub fn generate_random_scalar() -> Result<Scalar> {
     generate_256_bit_random_number()
         .and_then(convert_256_bit_big_uint_to_byte_arr)
         .and_then(convert_32_byte_arr_to_scalar_mod_order)
 }
 
-fn convert_scalar_to_hex_key(scalar: Scalar) -> Result<HexKey> {
+pub fn convert_scalar_to_hex_key(scalar: Scalar) -> Result<HexKey> {
     Ok(hex::encode(scalar.to_bytes()))
 }
 
@@ -67,8 +69,30 @@ fn convert_canonical_32_byte_arr_to_scalar(byte_arr: [u8; 32]) -> Result<Scalar>
     Ok(Scalar::from_canonical_bytes(byte_arr)?)
 }
 
+fn convert_any_32_byte_arr_to_scalar(byte_arr: [u8; 32]) -> Result<Scalar> {
+    Ok(Scalar::from_bits(byte_arr))
+}
+
 fn convert_hex_key_to_scalar(hex_key: HexKey) -> Result<Scalar> {
-    convert_hex_key_to_32_byte_arr(hex_key).and_then(convert_canonical_32_byte_arr_to_scalar)
+    convert_hex_key_to_32_byte_arr(hex_key)
+        .and_then(convert_canonical_32_byte_arr_to_scalar)
+}
+
+fn convert_scalar_to_compressed_edwards_y(scalar: Scalar) -> Result<CompressedEdwardsY> {
+    Ok(CompressedEdwardsY::from_slice(scalar.as_bytes()))
+}
+
+fn convert_compressed_edwards_y_to_scalar(cey: CompressedEdwardsY) -> Result<Scalar> {
+    convert_canonical_32_byte_arr_to_scalar(cey.to_bytes())
+}
+
+fn compress_edwards_point(e_point: EdwardsPoint) -> Result<CompressedEdwardsY> {
+    Ok(e_point.compress())
+}
+
+fn multiply_scalar_by_base_point(scalar: Scalar) -> Result<Scalar> {
+    compress_edwards_point(scalar * ED25519_BASEPOINT_POINT)
+        .and_then(|x| Ok(convert_compressed_edwards_y_to_scalar(x)?))
 }
 
 #[cfg(test)]
@@ -171,13 +195,35 @@ mod tests {
     }
 
     #[test]
-    fn should_convert_canonical_bytes_to_scalar() {
+    fn should_convert_any_32_byte_arr_to_scalar() {
+        let non_canonical_scalar = Scalar::from_bits([0xff; 32]);
+        assert!(!non_canonical_scalar.is_canonical());
+        let result = convert_any_32_byte_arr_to_scalar(non_canonical_scalar.to_bytes()).unwrap();
+        assert!(result == non_canonical_scalar);
+        let canonical_scalar = non_canonical_scalar.reduce();
+        assert!(canonical_scalar.is_canonical());
+        let result = convert_any_32_byte_arr_to_scalar(canonical_scalar.to_bytes()).unwrap();
+        assert!(result == canonical_scalar);
+    }
+
+    #[test]
+    fn should_convert_canonical_32_bytes_to_scalar() {
         let scalar = generate_random_scalar().unwrap();
-        let scalar_clone = scalar.clone();
-        let scalar_as_hex = convert_scalar_to_hex_key(scalar_clone).unwrap();
+        assert!(scalar.is_canonical());
         let result = convert_canonical_32_byte_arr_to_scalar(scalar.to_bytes()).unwrap();
-        let result_as_hex = convert_scalar_to_hex_key(result).unwrap();
-        assert!(result_as_hex == scalar_as_hex);
+        assert!(result == scalar);
+    }
+
+    #[test]
+    fn should_fail_to_convert_non_canonical_32_bytes_to_scalar() {
+        /*
+        let reduced = _2_255_minus_1.reduce();
+        assert!(reduced.is_canonical());
+        */
+
+        let non_canonical_scalar = Scalar::from_bits([0xff; 32]);
+        assert!(!non_canonical_scalar.is_canonical());
+        let result = std::panic::catch_unwind(|| convert_canonical_32_byte_arr_to_scalar(non_canonical_scalar.to_bytes()).unwrap());
     }
 
     #[test]
@@ -197,5 +243,29 @@ mod tests {
             .and_then(convert_hex_key_to_scalar)
             .unwrap();
         assert!(scalar == result)
+    }
+
+    #[test]
+    fn should_convert_scalar_to_compressed_edwards_y() {
+        let result = generate_random_scalar()
+            .and_then(convert_scalar_to_compressed_edwards_y)
+            .unwrap();
+        assert!(result.as_bytes().len() == 32)
+    }
+
+    #[test]
+    fn should_convert_compressed_edwards_y_to_scalar() {
+        let scalar = generate_random_scalar().unwrap();
+        let result = convert_scalar_to_compressed_edwards_y(scalar)
+            .and_then(convert_compressed_edwards_y_to_scalar)
+            .unwrap();
+        assert!(result.as_bytes().len() == 32);
+        assert!(scalar == result);
+    }
+
+    #[test]
+    fn should_compress_edwards_point_correctly() {
+        let result = compress_edwards_point(ED25519_BASEPOINT_POINT).unwrap();
+        assert!(result.to_bytes().len() == 32);
     }
 }
