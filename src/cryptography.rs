@@ -5,23 +5,12 @@ use curve25519_dalek::scalar::Scalar;
 use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
 use curve25519_dalek::constants::ED25519_BASEPOINT_POINT;
 use hex;
-use num_bigint::{BigUint, RandBigInt, ToBigUint};
 use std::result;
 use std::str::FromStr;
 use tiny_keccak::Keccak;
+use rand::thread_rng;
 
 type Result<T> = result::Result<T, AppError>;
-
-fn generate_256_bit_random_number() -> Result<BigUint> {
-    Ok(rand::thread_rng().gen_biguint(256))
-}
-
-fn convert_256_bit_big_uint_to_byte_arr(big_uint: BigUint) -> Result<[u8; 32]> {
-    let mut array = [0; 32];
-    let bytes = &big_uint.to_bytes_le()[..array.len()];
-    array.copy_from_slice(&bytes);
-    Ok(array)
-}
 
 fn convert_hex_key_to_32_byte_arr(hex_key: HexKey) -> Result<[u8; 32]> {
     let decoded_hex = hex::decode(hex_key)?;
@@ -35,14 +24,17 @@ fn convert_32_byte_arr_to_scalar_mod_order(bytes: [u8; 32]) -> Result<Scalar> {
     Ok(Scalar::from_bytes_mod_order(bytes))
 }
 
-fn convert_keccak256_hash_to_scalar_mod_order(hash: Keccak256Hash) -> Result<Scalar> {
-    convert_32_byte_arr_to_scalar_mod_order(hash)
+pub fn generate_random_scalar() -> Result<Scalar> {
+    Ok(Scalar::random(&mut thread_rng()))
 }
 
-pub fn generate_random_scalar() -> Result<Scalar> {
-    generate_256_bit_random_number()
-        .and_then(convert_256_bit_big_uint_to_byte_arr)
-        .and_then(convert_32_byte_arr_to_scalar_mod_order)
+pub fn generate_random_scalar_mod_order() -> Result<Scalar> {
+    generate_random_scalar()
+        .and_then(reduce_scalar_mod_l)
+}
+
+fn convert_keccak256_hash_to_scalar_mod_order(hash: Keccak256Hash) -> Result<Scalar> {
+    convert_32_byte_arr_to_scalar_mod_order(hash)
 }
 
 pub fn convert_scalar_to_hex_key(scalar: Scalar) -> Result<HexKey> {
@@ -105,27 +97,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn should_generate_256_bit_random_number() {
-        let x: BigUint = generate_256_bit_random_number().unwrap();
-        assert!(x > ToBigUint::to_biguint(&0).unwrap());
-    }
-
-    #[test]
-    fn should_generate_random_32_byte_arr() {
-        let result = generate_256_bit_random_number()
-            .and_then(convert_256_bit_big_uint_to_byte_arr)
-            .unwrap();
-        assert!(result.len() == 32);
-    }
-
-    #[test]
     fn should_convert_32_byte_arr_to_scalar_mod_order() {
-        let result = generate_256_bit_random_number()
-            .and_then(convert_256_bit_big_uint_to_byte_arr)
-            .and_then(convert_32_byte_arr_to_scalar_mod_order)
-            .unwrap();
+        let scalar = generate_random_scalar().unwrap();
+        let result = convert_32_byte_arr_to_scalar_mod_order(scalar.to_bytes()).unwrap();
         assert!(result.to_bytes().len() == 32);
-        assert!(result.is_canonical() == true)
+        assert!(result.is_canonical() == true);
     }
 
     #[test]
