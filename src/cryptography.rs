@@ -281,4 +281,12 @@ mod tests {
         let canonical_scalar = reduce_scalar_mod_l(non_canonical_scalar).unwrap();
         assert!(canonical_scalar.is_canonical());
     }
+
+    #[test]
+    fn should_multiply_scalar_by_base_point() {
+        let result = generate_random_scalar()
+            .and_then(reduce_scalar_mod_l)
+            .and_then(multiply_scalar_by_base_point)
+            .unwrap();
+    }
 }
