@@ -95,6 +95,10 @@ fn multiply_scalar_by_base_point(scalar: Scalar) -> Result<Scalar> {
         .and_then(|x| Ok(convert_compressed_edwards_y_to_scalar(x)?))
 }
 
+fn reduce_scalar_mod_l(scalar: Scalar) -> Result<Scalar> {
+    Ok(scalar.reduce())
+}
+
 #[cfg(test)]
 #[allow(unused_doc_comments)]
 mod tests {
@@ -248,6 +252,7 @@ mod tests {
     #[test]
     fn should_convert_scalar_to_compressed_edwards_y() {
         let result = generate_random_scalar()
+            .and_then(reduce_scalar_mod_l)
             .and_then(convert_scalar_to_compressed_edwards_y)
             .unwrap();
         assert!(result.as_bytes().len() == 32)
@@ -267,5 +272,13 @@ mod tests {
     fn should_compress_edwards_point_correctly() {
         let result = compress_edwards_point(ED25519_BASEPOINT_POINT).unwrap();
         assert!(result.to_bytes().len() == 32);
+    }
+
+    #[test]
+    fn should_reduce_scalar_mod_l() {
+        let non_canonical_scalar = Scalar::from_bits([0xff; 32]);
+        assert!(!non_canonical_scalar.is_canonical());
+        let canonical_scalar = reduce_scalar_mod_l(non_canonical_scalar).unwrap();
+        assert!(canonical_scalar.is_canonical());
     }
 }
