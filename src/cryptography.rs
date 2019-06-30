@@ -83,7 +83,7 @@ fn convert_scalar_to_compressed_edwards_y(scalar: Scalar) -> Result<CompressedEd
 }
 
 fn convert_compressed_edwards_y_to_scalar(cey: CompressedEdwardsY) -> Result<Scalar> {
-    convert_canonical_32_byte_arr_to_scalar(cey.to_bytes())
+    convert_any_32_byte_arr_to_scalar(cey.to_bytes())
 }
 
 fn compress_edwards_point(e_point: EdwardsPoint) -> Result<CompressedEdwardsY> {
