@@ -1,14 +1,13 @@
 use crate::error::AppError;
 use crate::types::{HexKey, Keccak256Hash};
 
-use curve25519_dalek::scalar::Scalar;
-use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
 use curve25519_dalek::constants::ED25519_BASEPOINT_POINT;
+use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
+use curve25519_dalek::scalar::Scalar;
 use hex;
-use std::result;
-use std::str::FromStr;
-use tiny_keccak::Keccak;
 use rand::thread_rng;
+use std::result;
+use tiny_keccak::Keccak;
 
 type Result<T> = result::Result<T, AppError>;
 
@@ -29,8 +28,7 @@ pub fn generate_random_scalar() -> Result<Scalar> {
 }
 
 pub fn generate_random_scalar_mod_order() -> Result<Scalar> {
-    generate_random_scalar()
-        .and_then(reduce_scalar_mod_l)
+    generate_random_scalar().and_then(reduce_scalar_mod_l)
 }
 
 fn convert_keccak256_hash_to_scalar_mod_order(hash: Keccak256Hash) -> Result<Scalar> {
@@ -66,8 +64,7 @@ fn convert_any_32_byte_arr_to_scalar(byte_arr: [u8; 32]) -> Result<Scalar> {
 }
 
 fn convert_hex_key_to_scalar(hex_key: HexKey) -> Result<Scalar> {
-    convert_hex_key_to_32_byte_arr(hex_key)
-        .and_then(convert_canonical_32_byte_arr_to_scalar)
+    convert_hex_key_to_32_byte_arr(hex_key).and_then(convert_canonical_32_byte_arr_to_scalar)
 }
 
 fn convert_scalar_to_compressed_edwards_y(scalar: Scalar) -> Result<CompressedEdwardsY> {
@@ -97,6 +94,18 @@ mod tests {
     use super::*;
 
     #[test]
+    fn should_generate_random_scalar() {
+        let result = generate_random_scalar().unwrap();
+        assert!(result.to_bytes().len() == 32);
+    }
+
+    #[test]
+    fn should_generate_random_scalar_mod_order() {
+        let result = generate_random_scalar_mod_order().unwrap();
+        assert!(result.is_canonical());
+    }
+
+    #[test]
     fn should_convert_32_byte_arr_to_scalar_mod_order() {
         let scalar = generate_random_scalar().unwrap();
         let result = convert_32_byte_arr_to_scalar_mod_order(scalar.to_bytes()).unwrap();
@@ -115,12 +124,6 @@ mod tests {
     }
 
     #[test]
-    fn should_generate_random_scalar() {
-        let result = generate_random_scalar().unwrap();
-        assert!(result.to_bytes().len() == 32);
-    }
-
-    #[test]
     fn should_convert_scalar_to_hex() {
         let result = generate_random_scalar()
             .and_then(convert_scalar_to_hex_key)
@@ -128,6 +131,7 @@ mod tests {
         assert!(result.chars().count() == 64);
     }
 
+    #[test]
     fn should_hash_bytes_correctly() {
         /**
          * NOTE:
@@ -162,7 +166,6 @@ mod tests {
     #[test]
     fn should_hash_a_scalar_correctly() {
         let scalar = Scalar::one();
-        let scalar_hex = convert_scalar_to_hex_key(scalar).unwrap();
         /**
          * NOTE:
          * expected_hash = web3.utils.keccak256(`0x${scalar_hex}`)
@@ -196,14 +199,11 @@ mod tests {
 
     #[test]
     fn should_fail_to_convert_non_canonical_32_bytes_to_scalar() {
-        /*
-        let reduced = _2_255_minus_1.reduce();
-        assert!(reduced.is_canonical());
-        */
-
         let non_canonical_scalar = Scalar::from_bits([0xff; 32]);
         assert!(!non_canonical_scalar.is_canonical());
-        let result = std::panic::catch_unwind(|| convert_canonical_32_byte_arr_to_scalar(non_canonical_scalar.to_bytes()).unwrap());
+        let _result = std::panic::catch_unwind(|| {
+            convert_canonical_32_byte_arr_to_scalar(non_canonical_scalar.to_bytes()).unwrap()
+        });
     }
 
     #[test]
@@ -218,7 +218,6 @@ mod tests {
     #[test]
     fn should_convert_scalar_to_hex_and_back_again() {
         let scalar = generate_random_scalar().unwrap();
-        let scalar_clone = scalar.clone();
         let result = convert_scalar_to_hex_key(scalar)
             .and_then(convert_hex_key_to_scalar)
             .unwrap();
@@ -260,7 +259,7 @@ mod tests {
 
     #[test]
     fn should_multiply_scalar_by_base_point() {
-        let result = generate_random_scalar()
+        generate_random_scalar()
             .and_then(reduce_scalar_mod_l)
             .and_then(multiply_scalar_by_base_point)
             .unwrap();
