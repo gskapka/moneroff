@@ -5,6 +5,7 @@ use std::{fmt, option};
 
 #[derive(Debug)]
 pub enum AppError {
+    Custom(String),
     HexError(hex::FromHexError),
     NoneError(option::NoneError),
     ParseBigIntError(num_bigint::ParseBigIntError),
@@ -14,6 +15,7 @@ pub enum AppError {
 impl fmt::Display for AppError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let msg = match *self {
+            AppError::Custom(ref msg) => msg.clone(),
             AppError::HexError(ref e) => format!("Hex error: {}", e),
             AppError::NoneError(ref e) => format!("Option error: {:?}", e),
             AppError::ParseBigIntError(ref e) => format!("BigUint error: {}", e),
