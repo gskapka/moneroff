@@ -36,7 +36,7 @@ pub fn generate_random_scalar_mod_order() -> Result<Scalar> {
     generate_random_scalar().and_then(reduce_scalar_mod_l)
 }
 
-fn convert_keccak256_hash_to_scalar_mod_order(hash: Keccak256Hash) -> Result<Scalar> {
+pub fn convert_keccak256_hash_to_scalar_mod_order(hash: Keccak256Hash) -> Result<Scalar> {
     convert_32_byte_arr_to_scalar_mod_order(hash)
 }
 
@@ -44,7 +44,7 @@ pub fn convert_scalar_to_hex_key(scalar: Scalar) -> Result<HexKey> {
     Ok(hex::encode(scalar.to_bytes()))
 }
 
-fn keccak256_hash_bytes(bytes: &[u8]) -> Result<Keccak256Hash> {
+pub fn keccak256_hash_bytes(bytes: &[u8]) -> Result<Keccak256Hash> {
     let mut res: Keccak256Hash = [0; 32];
     let mut keccak256 = Keccak::new_keccak256();
     keccak256.update(bytes);
@@ -52,7 +52,7 @@ fn keccak256_hash_bytes(bytes: &[u8]) -> Result<Keccak256Hash> {
     Ok(res)
 }
 
-fn keccak256_hash_hex_key(hex_key: HexKey) -> Result<Keccak256Hash> {
+pub fn keccak256_hash_hex_key(hex_key: HexKey) -> Result<Keccak256Hash> {
     keccak256_hash_bytes(&hex::decode(hex_key)?[..])
 }
 
@@ -68,7 +68,7 @@ fn convert_any_32_byte_arr_to_scalar(byte_arr: [u8; 32]) -> Result<Scalar> {
     Ok(Scalar::from_bits(byte_arr))
 }
 
-fn convert_hex_key_to_scalar(hex_key: HexKey) -> Result<Scalar> {
+pub fn convert_hex_key_to_scalar(hex_key: HexKey) -> Result<Scalar> {
     convert_hex_key_to_32_byte_arr(hex_key).and_then(convert_canonical_32_byte_arr_to_scalar)
 }
 
@@ -84,12 +84,12 @@ fn compress_edwards_point(e_point: EdwardsPoint) -> Result<CompressedEdwardsY> {
     Ok(e_point.compress())
 }
 
-fn multiply_scalar_by_base_point(scalar: Scalar) -> Result<Scalar> {
+pub fn multiply_scalar_by_basepoint(scalar: Scalar) -> Result<Scalar> {
     compress_edwards_point(scalar * ED25519_BASEPOINT_POINT)
         .and_then(|x| Ok(convert_compressed_edwards_y_to_scalar(x)?))
 }
 
-fn reduce_scalar_mod_l(scalar: Scalar) -> Result<Scalar> {
+pub fn reduce_scalar_mod_l(scalar: Scalar) -> Result<Scalar> {
     Ok(scalar.reduce())
 }
 
@@ -263,10 +263,10 @@ mod tests {
     }
 
     #[test]
-    fn should_multiply_scalar_by_base_point() {
+    fn should_multiply_scalar_by_basepoint() {
         generate_random_scalar()
             .and_then(reduce_scalar_mod_l)
-            .and_then(multiply_scalar_by_base_point)
+            .and_then(multiply_scalar_by_basepoint)
             .unwrap();
     }
 
