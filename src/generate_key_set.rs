@@ -5,26 +5,34 @@ use crate::cryptography::{
     generate_random_scalar_mod_order,
     keccak256_hash_hex_key,
     multiply_scalar_by_basepoint,
-    reduce_scalar_mod_l,
 };
 use crate::error::AppError;
 use crate::types::HexKey;
-use curve25519_dalek::edwards::CompressedEdwardsY;
-use curve25519_dalek::scalar::Scalar;
-
 use std::result;
 
 type Result<T> = result::Result<T, AppError>;
 
 struct KeyStruct {
     pub priv_sk: HexKey,
+    pub priv_vk: HexKey,
+    pub pub_sk: HexKey,
+    pub pub_vk: HexKey,
 }
 
-impl KeyStruct {
-    pub fn init_with_priv_sk(mut self, priv_sk: HexKey) -> Self {
-        self.priv_sk = priv_sk;
-        self
-    }
+fn get_key_struct_from_priv_sk(priv_sk: HexKey) -> Result<KeyStruct> {
+    let priv_vk = generate_priv_vk_from_priv_sk(priv_sk.clone())?;
+    let pub_sk = generate_pub_key_from_priv_key(priv_sk.clone())?;
+    let pub_vk = generate_pub_key_from_priv_key(priv_vk.clone())?;
+    Ok(KeyStruct {
+        priv_sk: priv_sk,
+        priv_vk: priv_vk,
+        pub_sk: pub_sk,
+        pub_vk: pub_vk,
+    })
+}
+
+fn get_random_key_struct() -> Result<KeyStruct> {
+    get_key_struct_from_priv_sk(generate_random_priv_sk()?)
 }
 
 fn generate_random_priv_sk() -> Result<HexKey> {
@@ -140,5 +148,24 @@ mod tests {
         let pub_vk = generate_pub_key_from_priv_key(priv_vk).unwrap();
         assert!(pub_sk == expected_pub_sk);
         assert!(pub_vk == expected_pub_vk);
+    }
+
+    #[test]
+    fn should_generate_key_struct() {
+        let priv_sk = generate_random_priv_sk().unwrap();
+        let result = get_key_struct_from_priv_sk(priv_sk).unwrap();
+        assert!(result.pub_vk.chars().count() == 64);
+        assert!(result.pub_sk.chars().count() == 64);
+        assert!(result.priv_sk.chars().count() == 64);
+        assert!(result.priv_vk.chars().count() == 64);
+    }
+
+    #[test]
+    fn should_generate_random_key_struct() {
+        let result = get_random_key_struct().unwrap();
+        assert!(result.pub_vk.chars().count() == 64);
+        assert!(result.pub_sk.chars().count() == 64);
+        assert!(result.priv_sk.chars().count() == 64);
+        assert!(result.priv_vk.chars().count() == 64);
     }
 }
