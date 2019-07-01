@@ -13,10 +13,15 @@ type Result<T> = result::Result<T, AppError>;
 
 fn convert_hex_key_to_32_byte_arr(hex_key: HexKey) -> Result<[u8; 32]> {
     let decoded_hex = hex::decode(hex_key)?;
-    let mut array = [0; 32];
-    let bytes = &decoded_hex[..array.len()];
-    array.copy_from_slice(&bytes);
-    Ok(array)
+    match decoded_hex.len() {
+        32 => {
+            let mut array = [0; 32];
+            let bytes = &decoded_hex[..array.len()];
+            array.copy_from_slice(&bytes);
+            Ok(array)
+        }
+        _ => Err(AppError::Custom("✘ Key length invalid!".to_string()))
+    }
 }
 
 fn convert_32_byte_arr_to_scalar_mod_order(bytes: [u8; 32]) -> Result<Scalar> {
@@ -263,5 +268,29 @@ mod tests {
             .and_then(reduce_scalar_mod_l)
             .and_then(multiply_scalar_by_base_point)
             .unwrap();
+    }
+
+    #[test]
+    fn should_convert_hex_key_to_byte_array() {
+        let hex_key = generate_random_scalar_mod_order()
+            .and_then(convert_scalar_to_hex_key)
+            .unwrap();
+        let result = convert_hex_key_to_32_byte_arr(hex_key)
+            .unwrap();
+        assert!(result.len() == 32);
+    }
+
+    #[test]
+    #[should_panic]
+    fn should_panic_if_hex_key_too_short() {
+        let short_hex_key = "c0ffee".to_string();
+        convert_hex_key_to_32_byte_arr(short_hex_key).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn should_panic_if_hex_key_too_long() {
+        let short_hex_key = "c0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffee".to_string();
+        convert_hex_key_to_32_byte_arr(short_hex_key).unwrap();
     }
 }
