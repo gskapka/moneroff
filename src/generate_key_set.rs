@@ -83,36 +83,29 @@ fn generate_pub_key_from_priv_key(priv_key: HexKey) -> Result<HexKey> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn should_generate_random_private_spend_key() {
-        let priv_sk = generate_random_priv_sk().unwrap();
-        assert!(priv_sk.chars().count() == 64);
-        let scalar = convert_hex_key_to_scalar(priv_sk).unwrap();
-        assert!(scalar.is_canonical());
+    fn get_example_priv_sk() -> String {
+        "401aab9897d1b585d8161afa28a054fd5a1e66bdf9355219266905a7db71500d"
+            .to_string()
     }
 
-    #[test]
-    fn should_not_panic_if_key_length_correct() {
-        let key = generate_random_scalar_mod_order()
-            .and_then(convert_scalar_to_hex_key)
-            .unwrap();
-        let _result = check_key(key).unwrap();
+    fn get_example_priv_vk() -> String {
+        "7dce51f70c33131a321f7f47f2902476d833f81119beaf37f1660dbcc7a2050c"
+            .to_string()
     }
 
-    #[test]
-    #[should_panic]
-    fn should_panic_if_key_length_too_long() {
-        let key_long: HexKey =
-            "fd4eef494e70a5d3b0309aa3ad0934dc07cc602731fd1b4b6a85702ddeeca00700".to_string();
-        let _result = check_hex_key_length(key_long).unwrap();
+    fn get_example_pub_sk() -> String {
+        "0b5a01fa5c8d0733ddbc3dabedc621a3906a4f5462420c0e12691c1d278c8acf"
+            .to_string()
     }
 
-    #[test]
-    #[should_panic]
-    fn should_panic_if_key_length_too_short() {
-        let key_short: HexKey =
-            "fd4eef494e70a5d3b0309aa3ad0934dc07cc602731fd1b4b6a85702ddeeca0".to_string();
-        let _result = check_hex_key_length(key_short).unwrap();
+    fn get_example_pub_vk() -> String {
+        "a3fbef25da640a49eddcdd2fc10998024c97acccb463217d4445d38fcb024428"
+            .to_string()
+    }
+
+    fn get_example_address() -> String {
+        "4244Mjbe7ee9gAfeM1cPuAUMn4QP5fkpj3MWtBnK1paubjNffQDMz2DDNCutG57VV11PJh5V5NyApMxF9BqMWpdy5XJMnCo"
+            .to_string()
     }
 
     #[test]
