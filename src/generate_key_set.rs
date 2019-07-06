@@ -109,19 +109,21 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
-    fn should_panic_if_key_length_is_odd() {
-        let invalid_hex: HexKey =
-            "fd4eef494e70a5d3b0309aa3ad0934dc07cc602731fd1b4b6a85702ddeeca00".to_string();
-        let _result = check_key_is_valid_hex(invalid_hex).unwrap();
+    fn should_generate_random_key_struct() {
+        let keys = MoneroKeys::generate_new_random_key().unwrap();
+        let priv_sk = keys.get_priv_sk().unwrap();
+        assert!(priv_sk.len() == 32);
     }
 
     #[test]
-    #[should_panic]
-    fn should_panic_if_key_not_valid_hex() {
-        let invalid_hex: HexKey =
-            "fd4eef494e70a5d3b0309aa3ad0934dc07cc602731fd1b4b6a85702ddeeca007xx".to_string();
-        let _result = check_key_is_valid_hex(invalid_hex).unwrap();
+    fn should_generate_key_struct_from_exising() {
+        let sk = get_example_priv_sk();
+        let sk_vector = hex::decode(sk.clone()).unwrap();
+        let sk_bytes = &sk_vector[..];
+        let keys = MoneroKeys::from_existing_key(sk).unwrap();
+        let priv_sk = keys.get_priv_sk().unwrap();
+        assert!(priv_sk.len() == 32);
+        assert!(priv_sk == sk_bytes);
     }
 
     #[test]
