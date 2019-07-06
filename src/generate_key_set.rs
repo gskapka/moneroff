@@ -28,25 +28,26 @@ struct MoneroKeys {
     pub address: Option<[u8; 69]>,
 }
 
-fn get_key_struct_from_priv_sk(priv_sk: HexKey) -> Result<KeyStruct> {
-    let priv_vk = generate_priv_vk_from_priv_sk(priv_sk.clone())?;
-    let pub_sk = generate_pub_key_from_priv_key(priv_sk.clone())?;
-    let pub_vk = generate_pub_key_from_priv_key(priv_vk.clone())?;
-    Ok(KeyStruct {
-        priv_sk: priv_sk,
-        priv_vk: priv_vk,
-        pub_sk: pub_sk,
-        pub_vk: pub_vk,
-    })
-}
+impl MoneroKeys {
+    fn init(priv_sk: Scalar) -> Result<Self> {
+        Ok(
+            MoneroKeys {
+                priv_sk: priv_sk,
+                priv_vk: None,
+                address: None,
+                pub_sk: None,
+                pub_vk: None,
+            }
+        )
+    }
 
-fn get_random_key_struct() -> Result<KeyStruct> {
-    get_key_struct_from_priv_sk(generate_random_priv_sk()?)
-}
+    pub fn generate_new_random_key() -> Result<Self> {
+        Ok(MoneroKeys::init(generate_random_scalar_mod_order()?)?)
+    }
 
-fn generate_random_priv_sk() -> Result<HexKey> {
-    generate_random_scalar_mod_order().and_then(convert_scalar_to_hex_key)
-}
+    pub fn from_existing_key(priv_sk: String) -> Result<Self> {
+        MoneroKeys::init(convert_hex_string_to_scalar(priv_sk)?)
+    }
 
 fn check_hex_key_length(key: HexKey) -> Result<HexKey> {
     match hex::decode(&key).unwrap().len() {
