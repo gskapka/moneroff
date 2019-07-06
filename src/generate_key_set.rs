@@ -1,22 +1,31 @@
 use crate::cryptography::{
-    convert_hex_key_to_scalar,
-    convert_keccak256_hash_to_scalar_mod_order,
-    convert_scalar_to_hex_key,
-    generate_random_scalar_mod_order,
-    keccak256_hash_hex_key,
+    keccak256_hash_bytes,
+    multiply_key_by_basepoint,
+    convert_hex_string_to_scalar,
     multiply_scalar_by_basepoint,
+    generate_priv_vk_from_priv_sk,
+    convert_32_byte_array_to_scalar,
+    generate_random_scalar_mod_order,
+    convert_hex_string_to_32_byte_array,
+    multiply_compressed_point_by_basepoint,
 };
 use crate::error::AppError;
-use crate::types::HexKey;
+use crate::types::{HexString, HexKey, Key};
+use cryptonote_base58::{from_base58, to_base58};
+use curve25519_dalek::scalar::Scalar;
+use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
 use std::result;
 
 type Result<T> = result::Result<T, AppError>;
 
-struct KeyStruct {
-    pub priv_sk: HexKey,
-    pub priv_vk: HexKey,
-    pub pub_sk: HexKey,
-    pub pub_vk: HexKey,
+// FIXME: Use a type for the [u8; 32]
+#[derive(Copy, Clone)]
+struct MoneroKeys {
+    pub priv_sk: Scalar,
+    pub priv_vk: Option<Scalar>,
+    pub pub_sk: Option<[u8; 32]>,
+    pub pub_vk: Option<[u8; 32]>,
+    pub address: Option<[u8; 69]>,
 }
 
 fn get_key_struct_from_priv_sk(priv_sk: HexKey) -> Result<KeyStruct> {
