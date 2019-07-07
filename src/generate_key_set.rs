@@ -62,6 +62,17 @@ impl MoneroKeys {
         Ok(self.priv_sk)
     }
 
+    fn get_priv_vk_scalar(self) -> Result<Scalar> {
+        match self.priv_vk {
+            Some(priv_vk) => Ok(priv_vk),
+            None => {
+                generate_priv_vk_from_priv_sk(self.priv_sk)
+                    .and_then(|x| self.add_priv_vk_to_self(x))
+                    .and_then(|x| x.get_priv_vk_scalar())
+            }
+        }
+    }
+
     pub fn get_priv_vk(self) -> Result<[u8; 32]> {
         self.get_priv_vk_scalar()
             .and_then(convert_scalar_to_bytes)
@@ -147,19 +158,15 @@ mod tests {
     }
 
     #[test]
-    fn should_get_public_key_from_private_key_correctly() {
-        let priv_sk: HexKey =
-            "0ccdf1e0217221deb8d807c1ecdf9c0c00beffbc339cdfa5c203c1a022d9cf01".to_string();
-        let priv_sk_clone = priv_sk.clone();
-        let priv_vk = generate_priv_vk_from_priv_sk(priv_sk_clone).unwrap();
-        let expected_pub_sk =
-            "2794fe656a521e21e4135aa13381b42cbeb180e653deda210f2039ca1009d110".to_string();
-        let expected_pub_vk =
-            "d76344d2c5467758f0bcbf03925bc8bf4b659e163ec68c342c7ba94b9679a125".to_string();
-        let pub_sk = generate_pub_key_from_priv_key(priv_sk).unwrap();
-        let pub_vk = generate_pub_key_from_priv_key(priv_vk).unwrap();
-        assert!(pub_sk == expected_pub_sk);
-        assert!(pub_vk == expected_pub_vk);
+    fn should_generate_private_view_key_correctly() {
+        let priv_vk = get_example_priv_vk();
+        let priv_vk_vector = hex::decode(priv_vk.clone()).unwrap();
+        let priv_vk_bytes = &priv_vk_vector[..];
+        let priv_sk = get_example_priv_sk();
+        let keys = MoneroKeys::from_existing_key(priv_sk).unwrap();
+        let priv_vk_from_struct = keys.get_priv_vk().unwrap();
+        assert!(priv_vk_from_struct.len() == 32);
+        assert!(priv_vk_from_struct == priv_vk_bytes);
     }
 
     #[test]
