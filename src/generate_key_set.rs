@@ -1,40 +1,23 @@
 use crate::types::{
     Key,
-    HexKey,
-    Address,
-    HexString,
-    Keccak256Hash,
-};
-
-use cryptonote_base58::{
-    to_base58,
-    from_base58,
+    Address
 };
 
 use crate::cryptography::{
     get_address_suffix,
     concatenate_address,
-    keccak256_hash_bytes,
     convert_scalar_to_bytes,
     hash_pub_keys_with_prefix,
-    multiply_key_by_basepoint,
     convert_hex_string_to_scalar,
     multiply_scalar_by_basepoint,
     generate_priv_vk_from_priv_sk,
     convert_edwards_point_to_bytes,
-    convert_32_byte_array_to_scalar,
     generate_random_scalar_mod_order,
-    convert_hex_string_to_32_byte_array,
-    multiply_compressed_point_by_basepoint,
-};
-
-use curve25519_dalek::edwards::{
-    EdwardsPoint,
-    CompressedEdwardsY,
 };
 
 use std::result;
 use crate::error::AppError;
+use cryptonote_base58::to_base58;
 use curve25519_dalek::scalar::Scalar;
 
 type Result<T> = result::Result<T, AppError>;
@@ -244,7 +227,6 @@ mod tests {
         let keys = MoneroKeys::from_existing_key(priv_sk).unwrap();
         let address_bytes = keys.get_address().unwrap();
         let address_base58 = to_base58(address_bytes.to_vec()).unwrap();
-        let expected_result = from_base58(get_example_address());
         assert!(address_base58 == get_example_address());
     }
 }
