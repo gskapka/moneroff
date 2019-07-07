@@ -223,11 +223,9 @@ mod tests {
     }
 
     #[test]
-    fn should_generate_key_struct_from_exising() {
-        let sk = get_example_priv_sk();
-        let sk_vector = hex::decode(sk.clone()).unwrap();
-        let sk_bytes = &sk_vector[..];
-        let keys = MoneroKeys::from_existing_key(sk).unwrap();
+    fn should_generate_key_struct_from_existing() {
+        let sk_bytes = &hex::decode(get_example_priv_sk()).unwrap()[..];
+        let keys = MoneroKeys::from_existing_key(get_example_priv_sk()).unwrap();
         let priv_sk = keys.get_priv_sk().unwrap();
         assert!(priv_sk.len() == 32);
         assert!(priv_sk == sk_bytes);
@@ -235,11 +233,8 @@ mod tests {
 
     #[test]
     fn should_generate_public_spend_key_correctly() {
-        let pub_sk = get_example_pub_sk();
-        let pub_sk_vector = hex::decode(pub_sk.clone()).unwrap();
-        let pub_sk_bytes = &pub_sk_vector[..];
-        let priv_sk = get_example_priv_sk();
-        let keys = MoneroKeys::from_existing_key(priv_sk).unwrap();
+        let pub_sk_bytes = &hex::decode(get_example_pub_sk()).unwrap()[..];
+        let keys = MoneroKeys::from_existing_key(get_example_priv_sk()).unwrap();
         let pub_sk_from_struct = keys.get_pub_sk().unwrap();
         assert!(pub_sk_from_struct.len() == 32);
         assert!(pub_sk_from_struct == pub_sk_bytes);
@@ -247,11 +242,8 @@ mod tests {
 
     #[test]
     fn should_generate_private_view_key_correctly() {
-        let priv_vk = get_example_priv_vk();
-        let priv_vk_vector = hex::decode(priv_vk.clone()).unwrap();
-        let priv_vk_bytes = &priv_vk_vector[..];
-        let priv_sk = get_example_priv_sk();
-        let keys = MoneroKeys::from_existing_key(priv_sk).unwrap();
+        let priv_vk_bytes = &hex::decode(get_example_priv_vk()).unwrap()[..];
+        let keys = MoneroKeys::from_existing_key(get_example_priv_sk()).unwrap();
         let priv_vk_from_struct = keys.get_priv_vk().unwrap();
         assert!(priv_vk_from_struct.len() == 32);
         assert!(priv_vk_from_struct == priv_vk_bytes);
@@ -259,11 +251,8 @@ mod tests {
 
     #[test]
     fn should_generate_public_view_key_correctly() {
-        let pub_vk = get_example_pub_vk();
-        let pub_vk_vector = hex::decode(pub_vk.clone()).unwrap();
-        let pub_vk_bytes = &pub_vk_vector[..];
-        let priv_sk = get_example_priv_sk();
-        let keys = MoneroKeys::from_existing_key(priv_sk).unwrap();
+        let pub_vk_bytes = &hex::decode(get_example_pub_vk()).unwrap()[..];
+        let keys = MoneroKeys::from_existing_key(get_example_priv_sk()).unwrap();
         let pub_vk_from_struct = keys.get_pub_vk().unwrap();
         assert!(pub_vk_from_struct.len() == 32);
         assert!(pub_vk_from_struct == pub_vk_bytes);
@@ -271,8 +260,7 @@ mod tests {
 
     #[test]
     fn should_generate_address_correctly() {
-        let priv_sk = get_example_priv_sk();
-        let keys = MoneroKeys::from_existing_key(priv_sk).unwrap();
+        let keys = MoneroKeys::from_existing_key(get_example_priv_sk()).unwrap();
         let address_bytes = keys.get_address().unwrap();
         let address_base58 = to_base58(address_bytes.to_vec()).unwrap();
         assert!(address_base58 == get_example_address());
@@ -280,8 +268,7 @@ mod tests {
 
     #[test]
     fn should_format_key_struct_with_no_panicking() {
-        let priv_sk = get_example_priv_sk();
-        let keys = MoneroKeys::from_existing_key(priv_sk).unwrap();
+        let keys = MoneroKeys::from_existing_key(get_example_priv_sk()).unwrap();
         println!("{}", keys)
     }
 }
