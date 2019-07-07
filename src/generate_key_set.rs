@@ -54,6 +54,11 @@ impl MoneroKeys {
         Ok(self)
     }
 
+    fn add_pub_sk_to_self(mut self, pub_sk: [u8; 32]) -> Result<Self> {
+        self.pub_sk = Some(pub_sk);
+        Ok(self)
+    }
+
     pub fn get_priv_sk(self) -> Result<[u8; 32]> {
         Ok(self.priv_sk.to_bytes())
     }
@@ -78,6 +83,18 @@ impl MoneroKeys {
             .and_then(convert_scalar_to_bytes)
     }
 
+    pub fn get_pub_sk(self) -> Result<[u8; 32]> {
+        match self.pub_sk {
+            Some(pub_sk) => Ok(pub_sk),
+            None => {
+                self.get_priv_sk_scalar()
+                    .and_then(multiply_scalar_by_basepoint)
+                    .and_then(convert_edwards_point_to_bytes)
+                    .and_then(|x| self.add_pub_sk_to_self(x))
+                    .and_then(|x| x.get_pub_sk())
+            }
+        }
+    }
 
 fn check_key(key: HexKey) -> Result<HexKey> {
     check_key_is_valid_hex(key).and_then(check_hex_key_length)
@@ -145,16 +162,15 @@ mod tests {
     }
 
     #[test]
-    fn should_generate_private_view_key_from_private_spend_key() {
-        let priv_sk: HexKey =
-            "fd4eef494e70a5d3b0309aa3ad0934dc07cc602731fd1b4b6a85702ddeeca007".to_string();
-        let expected_key: HexKey =
-            "d1546a8515e0488990db0f2d01666efc74bc26197c543047b766d8652db0b909".to_string();
-        let priv_vk = generate_priv_vk_from_priv_sk(priv_sk).unwrap();
-        assert!(priv_vk == expected_key);
-        assert!(priv_vk.chars().count() == 64);
-        let scalar = convert_hex_key_to_scalar(priv_vk).unwrap();
-        assert!(scalar.is_canonical());
+    fn should_generate_public_spend_key_correctly() {
+        let pub_sk = get_example_pub_sk();
+        let pub_sk_vector = hex::decode(pub_sk.clone()).unwrap();
+        let pub_sk_bytes = &pub_sk_vector[..];
+        let priv_sk = get_example_priv_sk();
+        let keys = MoneroKeys::from_existing_key(priv_sk).unwrap();
+        let pub_sk_from_struct = keys.get_pub_sk().unwrap();
+        assert!(pub_sk_from_struct.len() == 32);
+        assert!(pub_sk_from_struct == pub_sk_bytes);
     }
 
     #[test]
