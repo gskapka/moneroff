@@ -59,6 +59,11 @@ impl MoneroKeys {
         Ok(self)
     }
 
+    fn add_pub_vk_to_self(mut self, pub_vk: [u8; 32]) -> Result<Self> {
+        self.pub_vk = Some(pub_vk);
+        Ok(self)
+    }
+
     pub fn get_priv_sk(self) -> Result<[u8; 32]> {
         Ok(self.priv_sk.to_bytes())
     }
@@ -96,8 +101,19 @@ impl MoneroKeys {
         }
     }
 
-fn check_key(key: HexKey) -> Result<HexKey> {
-    check_key_is_valid_hex(key).and_then(check_hex_key_length)
+    pub fn get_pub_vk(self) -> Result<[u8; 32]> {
+        match self.pub_vk {
+            Some(pub_vk) => Ok(pub_vk),
+            None => {
+                self.get_priv_vk_scalar()
+                    .and_then(multiply_scalar_by_basepoint)
+                    .and_then(convert_edwards_point_to_bytes)
+                    .and_then(|x| self.add_pub_vk_to_self(x))
+                    .and_then(|x| x.get_pub_vk())
+            }
+        }
+    }
+
 }
 
 fn generate_priv_vk_from_priv_sk(priv_sk: HexKey) -> Result<HexKey> {
@@ -186,13 +202,15 @@ mod tests {
     }
 
     #[test]
-    fn should_generate_key_struct() {
-        let priv_sk = generate_random_priv_sk().unwrap();
-        let result = get_key_struct_from_priv_sk(priv_sk).unwrap();
-        assert!(result.pub_vk.chars().count() == 64);
-        assert!(result.pub_sk.chars().count() == 64);
-        assert!(result.priv_sk.chars().count() == 64);
-        assert!(result.priv_vk.chars().count() == 64);
+    fn should_generate_public_view_key_correctly() {
+        let pub_vk = get_example_pub_vk();
+        let pub_vk_vector = hex::decode(pub_vk.clone()).unwrap();
+        let pub_vk_bytes = &pub_vk_vector[..];
+        let priv_sk = get_example_priv_sk();
+        let keys = MoneroKeys::from_existing_key(priv_sk).unwrap();
+        let pub_vk_from_struct = keys.get_pub_vk().unwrap();
+        assert!(pub_vk_from_struct.len() == 32);
+        assert!(pub_vk_from_struct == pub_vk_bytes);
     }
 
     #[test]
