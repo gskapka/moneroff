@@ -1,6 +1,22 @@
+use crate::types::{
+    Key,
+    HexKey,
+    Address,
+    HexString,
+    Keccak256Hash,
+};
+
+use cryptonote_base58::{
+    to_base58,
+    from_base58,
+};
+
 use crate::cryptography::{
+    get_address_suffix,
+    concatenate_address,
     keccak256_hash_bytes,
     convert_scalar_to_bytes,
+    hash_pub_keys_with_prefix,
     multiply_key_by_basepoint,
     convert_hex_string_to_scalar,
     multiply_scalar_by_basepoint,
@@ -11,22 +27,25 @@ use crate::cryptography::{
     convert_hex_string_to_32_byte_array,
     multiply_compressed_point_by_basepoint,
 };
-use crate::error::AppError;
-use crate::types::{HexString, HexKey, Key};
-use cryptonote_base58::{from_base58, to_base58};
-use curve25519_dalek::scalar::Scalar;
-use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
+
+use curve25519_dalek::edwards::{
+    EdwardsPoint,
+    CompressedEdwardsY,
+};
+
 use std::result;
+use crate::error::AppError;
+use curve25519_dalek::scalar::Scalar;
 
 type Result<T> = result::Result<T, AppError>;
 
-// FIXME: Use a type for the Key
+// FIXME: Use a type for the address!
 #[derive(Copy, Clone)]
-struct MoneroKeys {
+pub struct MoneroKeys {
     pub priv_sk: Scalar,
-    pub priv_vk: Option<Scalar>,
     pub pub_sk: Option<Key>,
     pub pub_vk: Option<Key>,
+    pub priv_vk: Option<Scalar>,
     pub address: Option<[u8; 69]>,
 }
 
@@ -58,6 +77,11 @@ impl MoneroKeys {
 
     fn add_pub_sk_to_self(mut self, pub_sk: Key) -> Result<Self> {
         self.pub_sk = Some(pub_sk);
+        Ok(self)
+    }
+
+    fn add_address_to_self(mut self, address: [u8; 69]) -> Result<Self> {
+        self.address = Some(address);
         Ok(self)
     }
 
@@ -116,20 +140,19 @@ impl MoneroKeys {
         }
     }
 
-}
-
-fn generate_priv_vk_from_priv_sk(priv_sk: HexKey) -> Result<HexKey> {
-    check_key(priv_sk)
-        .and_then(keccak256_hash_hex_key)
-        .and_then(convert_keccak256_hash_to_scalar_mod_order)
-        .and_then(convert_scalar_to_hex_key)
-}
-
-fn generate_pub_key_from_priv_key(priv_key: HexKey) -> Result<HexKey> {
-    check_key(priv_key)
-        .and_then(convert_hex_key_to_scalar)
-        .and_then(multiply_scalar_by_basepoint)
-        .and_then(convert_scalar_to_hex_key)
+    pub fn get_address(self) -> Result<[u8; 69]> {
+        match self.address {
+            Some(address) => Ok(address),
+            None => {
+                let prefix = [0x12];
+                hash_pub_keys_with_prefix(self, prefix)
+                    .and_then(get_address_suffix)
+                    .and_then(|suffix| concatenate_address(self, prefix, suffix))
+                    .and_then(|address| self.add_address_to_self(address))
+                    .and_then(|updated_self| updated_self.get_address())
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -216,11 +239,12 @@ mod tests {
     }
 
     #[test]
-    fn should_generate_random_key_struct() {
-        let result = get_random_key_struct().unwrap();
-        assert!(result.pub_vk.chars().count() == 64);
-        assert!(result.pub_sk.chars().count() == 64);
-        assert!(result.priv_sk.chars().count() == 64);
-        assert!(result.priv_vk.chars().count() == 64);
+    fn should_generate_address_correctly() {
+        let priv_sk = get_example_priv_sk();
+        let keys = MoneroKeys::from_existing_key(priv_sk).unwrap();
+        let address_bytes = keys.get_address().unwrap();
+        let address_base58 = to_base58(address_bytes.to_vec()).unwrap();
+        let expected_result = from_base58(get_example_address());
+        assert!(address_base58 == get_example_address());
     }
 }
