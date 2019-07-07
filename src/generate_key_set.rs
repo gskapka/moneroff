@@ -20,13 +20,13 @@ use std::result;
 
 type Result<T> = result::Result<T, AppError>;
 
-// FIXME: Use a type for the [u8; 32]
+// FIXME: Use a type for the Key
 #[derive(Copy, Clone)]
 struct MoneroKeys {
     pub priv_sk: Scalar,
     pub priv_vk: Option<Scalar>,
-    pub pub_sk: Option<[u8; 32]>,
-    pub pub_vk: Option<[u8; 32]>,
+    pub pub_sk: Option<Key>,
+    pub pub_vk: Option<Key>,
     pub address: Option<[u8; 69]>,
 }
 
@@ -56,17 +56,17 @@ impl MoneroKeys {
         Ok(self)
     }
 
-    fn add_pub_sk_to_self(mut self, pub_sk: [u8; 32]) -> Result<Self> {
+    fn add_pub_sk_to_self(mut self, pub_sk: Key) -> Result<Self> {
         self.pub_sk = Some(pub_sk);
         Ok(self)
     }
 
-    fn add_pub_vk_to_self(mut self, pub_vk: [u8; 32]) -> Result<Self> {
+    fn add_pub_vk_to_self(mut self, pub_vk: Key) -> Result<Self> {
         self.pub_vk = Some(pub_vk);
         Ok(self)
     }
 
-    pub fn get_priv_sk(self) -> Result<[u8; 32]> {
+    pub fn get_priv_sk(self) -> Result<Key> {
         Ok(self.priv_sk.to_bytes())
     }
 
@@ -85,12 +85,12 @@ impl MoneroKeys {
         }
     }
 
-    pub fn get_priv_vk(self) -> Result<[u8; 32]> {
+    pub fn get_priv_vk(self) -> Result<Key> {
         self.get_priv_vk_scalar()
             .and_then(convert_scalar_to_bytes)
     }
 
-    pub fn get_pub_sk(self) -> Result<[u8; 32]> {
+    pub fn get_pub_sk(self) -> Result<Key> {
         match self.pub_sk {
             Some(pub_sk) => Ok(pub_sk),
             None => {
@@ -103,7 +103,7 @@ impl MoneroKeys {
         }
     }
 
-    pub fn get_pub_vk(self) -> Result<[u8; 32]> {
+    pub fn get_pub_vk(self) -> Result<Key> {
         match self.pub_vk {
             Some(pub_vk) => Ok(pub_vk),
             None => {
