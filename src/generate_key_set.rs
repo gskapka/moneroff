@@ -39,14 +39,13 @@ use curve25519_dalek::scalar::Scalar;
 
 type Result<T> = result::Result<T, AppError>;
 
-// FIXME: Use a type for the address!
 #[derive(Copy, Clone)]
 pub struct MoneroKeys {
     pub priv_sk: Scalar,
     pub pub_sk: Option<Key>,
     pub pub_vk: Option<Key>,
     pub priv_vk: Option<Scalar>,
-    pub address: Option<[u8; 69]>,
+    pub address: Option<Address>,
 }
 
 impl MoneroKeys {
@@ -62,14 +61,6 @@ impl MoneroKeys {
         )
     }
 
-    pub fn generate_new_random_key() -> Result<Self> {
-        Ok(MoneroKeys::init(generate_random_scalar_mod_order()?)?)
-    }
-
-    pub fn from_existing_key(priv_sk: String) -> Result<Self> {
-        MoneroKeys::init(convert_hex_string_to_scalar(priv_sk)?)
-    }
-
     fn add_priv_vk_to_self(mut self, priv_vk: Scalar) -> Result<Self> {
         self.priv_vk = Some(priv_vk);
         Ok(self)
@@ -80,7 +71,7 @@ impl MoneroKeys {
         Ok(self)
     }
 
-    fn add_address_to_self(mut self, address: [u8; 69]) -> Result<Self> {
+    fn add_address_to_self(mut self, address: Address) -> Result<Self> {
         self.address = Some(address);
         Ok(self)
     }
@@ -88,10 +79,6 @@ impl MoneroKeys {
     fn add_pub_vk_to_self(mut self, pub_vk: Key) -> Result<Self> {
         self.pub_vk = Some(pub_vk);
         Ok(self)
-    }
-
-    pub fn get_priv_sk(self) -> Result<Key> {
-        Ok(self.priv_sk.to_bytes())
     }
 
     fn get_priv_sk_scalar(self) -> Result<Scalar> {
@@ -107,6 +94,19 @@ impl MoneroKeys {
                     .and_then(|x| x.get_priv_vk_scalar())
             }
         }
+    }
+
+    pub fn generate_new_random_key() -> Result<Self> {
+        Ok(MoneroKeys::init(generate_random_scalar_mod_order()?)?)
+    }
+
+    pub fn from_existing_key(priv_sk: String) -> Result<Self> {
+        MoneroKeys::init(convert_hex_string_to_scalar(priv_sk)?)
+    }
+
+
+    pub fn get_priv_sk(self) -> Result<Key> {
+        Ok(self.priv_sk.to_bytes())
     }
 
     pub fn get_priv_vk(self) -> Result<Key> {
@@ -140,7 +140,7 @@ impl MoneroKeys {
         }
     }
 
-    pub fn get_address(self) -> Result<[u8; 69]> {
+    pub fn get_address(self) -> Result<Address> {
         match self.address {
             Some(address) => Ok(address),
             None => {
