@@ -1,21 +1,25 @@
+use std::{
+    fmt,
+    result,
+};
+
 use crate::types::{
     Key,
     Address
 };
 
 use crate::cryptography::{
-    get_address_suffix,
     concatenate_address,
     convert_scalar_to_bytes,
     hash_pub_keys_with_prefix,
     convert_hex_string_to_scalar,
+    get_address_suffix_from_hash,
     multiply_scalar_by_basepoint,
     generate_priv_vk_from_priv_sk,
     convert_edwards_point_to_bytes,
     generate_random_scalar_mod_order,
 };
 
-use std::result;
 use crate::error::AppError;
 use cryptonote_base58::to_base58;
 use curve25519_dalek::scalar::Scalar;
@@ -87,7 +91,6 @@ impl MoneroKeys {
         MoneroKeys::init(convert_hex_string_to_scalar(priv_sk)?)
     }
 
-
     pub fn get_priv_sk(self) -> Result<Key> {
         Ok(self.priv_sk.to_bytes())
     }
@@ -129,12 +132,57 @@ impl MoneroKeys {
             None => {
                 let prefix = [0x12];
                 hash_pub_keys_with_prefix(self, prefix)
-                    .and_then(get_address_suffix)
+                    .and_then(get_address_suffix_from_hash)
                     .and_then(|suffix| concatenate_address(self, prefix, suffix))
                     .and_then(|address| self.add_address_to_self(address))
                     .and_then(|updated_self| updated_self.get_address())
             }
         }
+    }
+}
+
+impl fmt::Display for MoneroKeys {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let priv_sk = self.get_priv_sk()
+            .expect(&"✘ Error getting private spend key!".to_string());
+        let priv_vk = self.get_priv_vk()
+            .expect(&"✘ Error getting private view key!".to_string());
+        let pub_sk = self.get_pub_sk()
+            .expect(&"✘ Error getting public spend key!".to_string());
+        let pub_vk = self.get_pub_vk()
+            .expect(&"✘ Error getting public view key!".to_string());
+       let address = self.get_address()
+            .expect(&"✘ Error getting address!".to_string());
+        let address_for_display = format!(
+            "\nAddress:\n\t{:?}\n",
+            to_base58(address[..].to_vec())
+                .expect(&"✘ Error encoding address!".to_string())
+        );
+        let priv_sk_for_display = format!(
+            "\nPrivate Spend Key:\n\t0x{}\n",
+            hex::encode(priv_sk)
+        );
+        let priv_vk_for_display = format!(
+            "\nPrivate View Key:\n\t0x{}\n",
+            hex::encode(priv_vk)
+        );
+        let pub_sk_for_display = format!(
+            "\nPublic Spend Key:\n\t0x{}\n",
+            hex::encode(pub_sk)
+        );
+        let pub_vk_for_display = format!(
+            "\nPublic View Key:\n\t0x{}\n",
+            hex::encode(pub_vk)
+        );
+        write!(
+            f,
+            "{}{}{}{}{}",
+            priv_vk_for_display,
+            priv_sk_for_display,
+            pub_vk_for_display,
+            pub_sk_for_display,
+            address_for_display
+        )
     }
 }
 
@@ -228,5 +276,12 @@ mod tests {
         let address_bytes = keys.get_address().unwrap();
         let address_base58 = to_base58(address_bytes.to_vec()).unwrap();
         assert!(address_base58 == get_example_address());
+    }
+
+    #[test]
+    fn should_format_key_struct_with_no_panicking() {
+        let priv_sk = get_example_priv_sk();
+        let keys = MoneroKeys::from_existing_key(priv_sk).unwrap();
+        println!("{}", keys)
     }
 }
