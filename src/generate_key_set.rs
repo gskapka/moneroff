@@ -49,17 +49,24 @@ impl MoneroKeys {
         MoneroKeys::init(convert_hex_string_to_scalar(priv_sk)?)
     }
 
-fn check_hex_key_length(key: HexKey) -> Result<HexKey> {
-    match hex::decode(&key).unwrap().len() {
-        32 => Ok(key),
-        _ => Err(AppError::Custom("✘ Key length invalid!".to_string())),
+    fn add_priv_vk_to_self(mut self, priv_vk: Scalar) -> Result<Self> {
+        self.priv_vk = Some(priv_vk);
+        Ok(self)
     }
-}
 
-fn check_key_is_valid_hex(key: HexKey) -> Result<HexKey> {
-    hex::decode(&key)?;
-    Ok(key)
-}
+    pub fn get_priv_sk(self) -> Result<[u8; 32]> {
+        Ok(self.priv_sk.to_bytes())
+    }
+
+    fn get_priv_sk_scalar(self) -> Result<Scalar> {
+        Ok(self.priv_sk)
+    }
+
+    pub fn get_priv_vk(self) -> Result<[u8; 32]> {
+        self.get_priv_vk_scalar()
+            .and_then(convert_scalar_to_bytes)
+    }
+
 
 fn check_key(key: HexKey) -> Result<HexKey> {
     check_key_is_valid_hex(key).and_then(check_hex_key_length)
