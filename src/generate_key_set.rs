@@ -1,9 +1,11 @@
 use crate::cryptography::{
     keccak256_hash_bytes,
+    convert_scalar_to_bytes,
     multiply_key_by_basepoint,
     convert_hex_string_to_scalar,
     multiply_scalar_by_basepoint,
     generate_priv_vk_from_priv_sk,
+    convert_edwards_point_to_bytes,
     convert_32_byte_array_to_scalar,
     generate_random_scalar_mod_order,
     convert_hex_string_to_32_byte_array,
