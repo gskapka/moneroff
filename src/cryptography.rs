@@ -215,4 +215,16 @@ mod tests {
             .unwrap();
         assert!(result == expected_bytes);
     }
+
+    #[test]
+    fn should_convert_32_byte_array_to_scalar() {
+        let scalar = generate_random_scalar()
+            .unwrap();
+        let bytes = convert_scalar_to_bytes(scalar)
+            .unwrap();
+        assert!(bytes.len() == 32);
+        let scalar_from_bytes = convert_32_byte_array_to_scalar(bytes)
+            .unwrap();
+        assert!(scalar_from_bytes == scalar);
+    }
 }
