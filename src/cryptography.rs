@@ -40,7 +40,7 @@ pub fn keccak256_hash_bytes(bytes: &[u8]) -> Result<Keccak256Hash> {
     Ok(res)
 }
 
-pub fn convert_edwards_point_to_bytes(x: CompressedEdwardsY) -> Result<Key> {
+pub fn convert_compressed_edwards_y_to_bytes(x: CompressedEdwardsY) -> Result<Key> {
     Ok(x.to_bytes())
 }
 
@@ -192,4 +192,15 @@ mod tests {
         assert!(canonical_scalar.is_canonical());
     }
 
+    #[test]
+    fn should_convert_edwards_point_to_bytes() {
+        let scalar = generate_random_scalar_mod_order()
+            .unwrap();
+        let expected_bytes = convert_scalar_to_bytes(scalar.clone())
+            .unwrap();
+        let compressed_point = CompressedEdwardsY::from_slice(&expected_bytes);
+        let result = convert_compressed_edwards_y_to_bytes(compressed_point)
+            .unwrap();
+        assert!(result == expected_bytes);
+    }
 }
