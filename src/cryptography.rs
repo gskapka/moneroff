@@ -16,23 +16,6 @@ use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
 
 type Result<T> = result::Result<T, AppError>;
 
-fn convert_hex_key_to_32_byte_arr(hex_key: HexKey) -> Result<[u8; 32]> {
-    let decoded_hex = hex::decode(hex_key)?;
-    match decoded_hex.len() {
-        32 => {
-            let mut array = [0; 32];
-            let bytes = &decoded_hex[..array.len()];
-            array.copy_from_slice(&bytes);
-            Ok(array)
-        }
-        _ => Err(AppError::Custom("✘ Key length invalid!".to_string()))
-    }
-}
-
-fn convert_32_byte_arr_to_scalar_mod_order(bytes: [u8; 32]) -> Result<Scalar> {
-    Ok(Scalar::from_bytes_mod_order(bytes))
-}
-
 pub fn generate_random_scalar() -> Result<Scalar> {
     Ok(Scalar::random(&mut thread_rng()))
 }
@@ -42,11 +25,7 @@ pub fn generate_random_scalar_mod_order() -> Result<Scalar> {
 }
 
 pub fn convert_keccak256_hash_to_scalar_mod_order(hash: Keccak256Hash) -> Result<Scalar> {
-    convert_32_byte_arr_to_scalar_mod_order(hash)
-}
-
-pub fn convert_scalar_to_hex_key(scalar: Scalar) -> Result<HexKey> {
-    Ok(hex::encode(scalar.to_bytes()))
+    convert_key_to_scalar_mod_order(hash)
 }
 
 pub fn keccak256_hash_bytes(bytes: &[u8]) -> Result<Keccak256Hash> {
@@ -57,32 +36,8 @@ pub fn keccak256_hash_bytes(bytes: &[u8]) -> Result<Keccak256Hash> {
     Ok(res)
 }
 
-pub fn keccak256_hash_hex_key(hex_key: HexKey) -> Result<Keccak256Hash> {
-    keccak256_hash_bytes(&hex::decode(hex_key)?[..])
 }
 
-fn hash_scalar(scalar: Scalar) -> Result<Keccak256Hash> {
-    keccak256_hash_bytes(&scalar.to_bytes())
-}
-
-fn convert_canonical_32_byte_arr_to_scalar(byte_arr: [u8; 32]) -> Result<Scalar> {
-    Ok(Scalar::from_canonical_bytes(byte_arr)?)
-}
-
-fn convert_any_32_byte_arr_to_scalar(byte_arr: [u8; 32]) -> Result<Scalar> {
-    Ok(Scalar::from_bits(byte_arr))
-}
-
-pub fn convert_hex_key_to_scalar(hex_key: HexKey) -> Result<Scalar> {
-    convert_hex_key_to_32_byte_arr(hex_key).and_then(convert_canonical_32_byte_arr_to_scalar)
-}
-
-fn convert_scalar_to_compressed_edwards_y(scalar: Scalar) -> Result<CompressedEdwardsY> {
-    Ok(CompressedEdwardsY::from_slice(scalar.as_bytes()))
-}
-
-fn convert_compressed_edwards_y_to_scalar(cey: CompressedEdwardsY) -> Result<Scalar> {
-    convert_any_32_byte_arr_to_scalar(cey.to_bytes())
 }
 
 fn compress_edwards_point(e_point: EdwardsPoint) -> Result<CompressedEdwardsY> {
