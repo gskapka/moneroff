@@ -193,6 +193,18 @@ mod tests {
     }
 
     #[test]
+    fn should_convert_scalar_to_bytes() {
+        let scalar = generate_random_scalar_mod_order()
+            .unwrap();
+        let bytes = convert_scalar_to_bytes(scalar)
+            .unwrap();
+        let scalar_from_bytes = Scalar::from_canonical_bytes(bytes)
+            .unwrap();
+        assert!(scalar == scalar_from_bytes);
+        assert!(scalar.is_canonical());
+    }
+
+    #[test]
     fn should_convert_edwards_point_to_bytes() {
         let scalar = generate_random_scalar_mod_order()
             .unwrap();
