@@ -295,4 +295,9 @@ mod tests {
         }
     }
 
+    #[test]
+    fn should_convert_32_char_hex_string_to_scalar() {
+        let result = convert_hex_string_to_scalar(get_example_priv_sk())
+            .unwrap();
+    }
 }
