@@ -102,8 +102,16 @@ mod tests {
     fn should_generate_random_scalar() {
         let result = generate_random_scalar().unwrap();
         assert!(result.to_bytes().len() == 32);
+        assert!(result.is_canonical());
     }
 
+    #[test]
+    fn should_convert_32_byte_arr_to_scalar_mod_order() {
+        let scalar = generate_random_scalar().unwrap();
+        let result = convert_key_to_scalar_mod_order(scalar.to_bytes()).unwrap();
+        assert!(result.to_bytes().len() == 32);
+        assert!(result.is_canonical() == true);
+    }
     #[test]
     fn should_generate_random_scalar_mod_order() {
         let result = generate_random_scalar_mod_order().unwrap();
@@ -111,17 +119,17 @@ mod tests {
     }
 
     #[test]
-    fn should_convert_32_byte_arr_to_scalar_mod_order() {
-        let scalar = generate_random_scalar().unwrap();
-        let result = convert_32_byte_arr_to_scalar_mod_order(scalar.to_bytes()).unwrap();
-        assert!(result.to_bytes().len() == 32);
-        assert!(result.is_canonical() == true);
+    fn should_keccak256_hash_bytes() {
+        let bytes = [0x01, 0x02];
+        let result = keccak256_hash_bytes(&bytes)
+            .unwrap();
+        assert!(result.len() == 32);
     }
 
     #[test]
     fn should_convert_keccak256_hash_to_scalar_mod_order() {
-        let result = generate_random_scalar()
-            .and_then(hash_scalar)
+        let bytes = [0x01, 0x02];
+        let result = keccak256_hash_bytes(&bytes)
             .and_then(convert_keccak256_hash_to_scalar_mod_order)
             .unwrap();
         assert!(result.to_bytes().len() == 32);
@@ -129,137 +137,10 @@ mod tests {
     }
 
     #[test]
-    fn should_convert_scalar_to_hex() {
-        let result = generate_random_scalar()
-            .and_then(convert_scalar_to_hex_key)
-            .unwrap();
-        assert!(result.chars().count() == 64);
-    }
-
-    #[test]
-    fn should_hash_bytes_correctly() {
-        /**
-         * NOTE:
-         * expected_hash = web3.utils.keccak26(web3.utils.toBN(hex_key_string))
-         */
-        let hex_key_string: HexKey =
-            "faae50e630355f536a35f931b941e1578227e30c2cdfaa69c59c264484d40ed8".to_string();
-        let expected_hash =
-            "532bc0ce4f17550956943d3b883866c623be7f59cf07a0ec890ea037a10ab792".to_string();
-        let hex_key_bytes = &hex::decode(hex_key_string).unwrap()[..];
-        let hashed_bytes = keccak256_hash_bytes(&hex_key_bytes).unwrap();
-        let result = hex::encode(hashed_bytes);
-        assert!(result == expected_hash);
-    }
-
-    #[test]
-    fn should_hash_a_hex_key_correctly() {
-        /**
-         * NOTE:
-         * const str = web3.utils.toBN(hex_key_string).toString()
-         * expected_hash = web3.utils.keccak26(str)
-         */
-        let hex_key_string: HexKey =
-            "faae50e630355f536a35f931b941e1578227e30c2cdfaa69c59c264484d40ed8".to_string();
-        let expected_hash =
-            "532bc0ce4f17550956943d3b883866c623be7f59cf07a0ec890ea037a10ab792".to_string();
-        let hashed_hex_key = keccak256_hash_hex_key(hex_key_string).unwrap();
-        let result = hex::encode(hashed_hex_key);
-        assert!(result == expected_hash)
-    }
-
-    #[test]
-    fn should_hash_a_scalar_correctly() {
-        let scalar = Scalar::one();
-        /**
-         * NOTE:
-         * expected_hash = web3.utils.keccak256(`0x${scalar_hex}`)
-         */
-        let expected_hash =
-            "48078cfed56339ea54962e72c37c7f588fc4f8e5bc173827ba75cb10a63a96a5".to_string();
-        let hashed_scalar = hash_scalar(scalar).unwrap();
-        let result = hex::encode(hashed_scalar);
-        assert!(result == expected_hash)
-    }
-
-    #[test]
-    fn should_convert_any_32_byte_arr_to_scalar() {
-        let non_canonical_scalar = Scalar::from_bits([0xff; 32]);
-        assert!(!non_canonical_scalar.is_canonical());
-        let result = convert_any_32_byte_arr_to_scalar(non_canonical_scalar.to_bytes()).unwrap();
-        assert!(result == non_canonical_scalar);
-        let canonical_scalar = non_canonical_scalar.reduce();
-        assert!(canonical_scalar.is_canonical());
-        let result = convert_any_32_byte_arr_to_scalar(canonical_scalar.to_bytes()).unwrap();
-        assert!(result == canonical_scalar);
-    }
-
-    #[test]
-    fn should_convert_canonical_32_bytes_to_scalar() {
-        let scalar = generate_random_scalar().unwrap();
-        assert!(scalar.is_canonical());
-        let result = convert_canonical_32_byte_arr_to_scalar(scalar.to_bytes()).unwrap();
-        assert!(result == scalar);
-    }
-
-    #[test]
-    fn should_fail_to_convert_non_canonical_32_bytes_to_scalar() {
-        let non_canonical_scalar = Scalar::from_bits([0xff; 32]);
-        assert!(!non_canonical_scalar.is_canonical());
-        let _result = std::panic::catch_unwind(|| {
-            convert_canonical_32_byte_arr_to_scalar(non_canonical_scalar.to_bytes()).unwrap()
-        });
-    }
-
-    #[test]
-    fn should_convert_hex_key_to_byte_arr() {
-        let result = generate_random_scalar()
-            .and_then(convert_scalar_to_hex_key)
-            .and_then(convert_hex_key_to_32_byte_arr)
-            .unwrap();
-        assert!(result.len() == 32)
-    }
-
-    #[test]
-    fn should_convert_scalar_to_hex_and_back_again() {
-        let scalar = generate_random_scalar().unwrap();
-        let result = convert_scalar_to_hex_key(scalar)
-            .and_then(convert_hex_key_to_scalar)
-            .unwrap();
-        assert!(scalar == result)
-    }
-
-    #[test]
-    fn should_convert_scalar_to_compressed_edwards_y() {
-        let result = generate_random_scalar()
-            .and_then(reduce_scalar_mod_l)
-            .and_then(convert_scalar_to_compressed_edwards_y)
-            .unwrap();
-        assert!(result.as_bytes().len() == 32)
-    }
-
-    #[test]
-    fn should_convert_compressed_edwards_y_to_scalar() {
-        let scalar = generate_random_scalar().unwrap();
-        let result = convert_scalar_to_compressed_edwards_y(scalar)
-            .and_then(convert_compressed_edwards_y_to_scalar)
-            .unwrap();
-        assert!(result.as_bytes().len() == 32);
-        assert!(scalar == result);
-    }
-
-    #[test]
     fn should_compress_edwards_point_correctly() {
+        use curve25519_dalek::constants::ED25519_BASEPOINT_POINT;
         let result = compress_edwards_point(ED25519_BASEPOINT_POINT).unwrap();
         assert!(result.to_bytes().len() == 32);
-    }
-
-    #[test]
-    fn should_reduce_scalar_mod_l() {
-        let non_canonical_scalar = Scalar::from_bits([0xff; 32]);
-        assert!(!non_canonical_scalar.is_canonical());
-        let canonical_scalar = reduce_scalar_mod_l(non_canonical_scalar).unwrap();
-        assert!(canonical_scalar.is_canonical());
     }
 
     #[test]
@@ -271,26 +152,12 @@ mod tests {
     }
 
     #[test]
-    fn should_convert_hex_key_to_byte_array() {
-        let hex_key = generate_random_scalar_mod_order()
-            .and_then(convert_scalar_to_hex_key)
+    fn should_reduce_scalar_mod_l() {
+        let non_canonical_scalar = Scalar::from_bits([0xff; 32]);
+        assert!(!non_canonical_scalar.is_canonical());
+        let canonical_scalar = reduce_scalar_mod_l(non_canonical_scalar)
             .unwrap();
-        let result = convert_hex_key_to_32_byte_arr(hex_key)
-            .unwrap();
-        assert!(result.len() == 32);
+        assert!(canonical_scalar.is_canonical());
     }
 
-    #[test]
-    #[should_panic]
-    fn should_panic_if_hex_key_too_short() {
-        let short_hex_key = "c0ffee".to_string();
-        convert_hex_key_to_32_byte_arr(short_hex_key).unwrap();
-    }
-
-    #[test]
-    #[should_panic]
-    fn should_panic_if_hex_key_too_long() {
-        let short_hex_key = "c0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffee".to_string();
-        convert_hex_key_to_32_byte_arr(short_hex_key).unwrap();
-    }
 }
