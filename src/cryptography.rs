@@ -253,6 +253,20 @@ mod tests {
     }
 
     #[test]
+    fn should_fail_to_convert_non_canonical_32_byte_array_to_scalar() {
+        let expected_error = "✘ Not a point on the edwards curve!".to_string();
+        let non_canonical_scalar = Scalar::from_bits([0xff; 32]);
+        let bytes = convert_scalar_to_bytes(non_canonical_scalar)
+            .unwrap();
+        assert!(bytes.len() == 32);
+        match convert_32_byte_array_to_scalar(bytes) {
+            Err(AppError::Custom(e)) => assert!(e == expected_error),
+            Err(e) => panic!("Did not expect this error: {}", e),
+            Ok(_) => panic!("Should not have succeeded!")
+        }
+    }
+
+    #[test]
     fn should_convert_64_char_hex_string_to_32_byte_array() {
         let result = convert_hex_string_to_32_byte_array(get_example_priv_sk())
             .unwrap();
