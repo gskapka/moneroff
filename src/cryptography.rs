@@ -1,13 +1,18 @@
-use crate::error::AppError;
-use crate::types::{HexKey, Keccak256Hash};
+use crate::types::{
+    Key,
+    Address,
+    Keccak256Hash,
+};
 
-use curve25519_dalek::constants::ED25519_BASEPOINT_POINT;
-use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
-use curve25519_dalek::scalar::Scalar;
 use hex;
-use rand::thread_rng;
 use std::result;
+use rand::thread_rng;
 use tiny_keccak::Keccak;
+use crate::error::AppError;
+use crate::monero_keys::MoneroKeys;
+use curve25519_dalek::scalar::Scalar;
+use curve25519_dalek::constants::ED25519_BASEPOINT_TABLE;
+use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
 
 type Result<T> = result::Result<T, AppError>;
 
