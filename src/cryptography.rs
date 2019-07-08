@@ -130,6 +130,30 @@ pub fn convert_hex_string_to_32_byte_array(hex: String) -> Result<Key> {
 mod tests {
     use super::*;
 
+    fn get_example_priv_sk() -> String {
+        "d3d21c30a27b2a2b64df410adbadc69eefb2be8e0c357d6a42f19638b343a606"
+            .to_string()
+    }
+
+    fn get_example_priv_vk() -> String {
+        "d1a9f90efc96a23469c0bb2f6a0515cb9a859b7d289b5e7f10d3c16912cd4308"
+            .to_string()
+    }
+
+    fn get_example_pub_sk() -> String {
+        "ebd1ab2b12454952289125922540cfa87642b4e6acb173de9bbe0f8c09584a11"
+            .to_string()
+    }
+
+    fn get_example_pub_vk() -> String {
+        "87bb6f60d6288907a51511017261435e449767a71e27d8487a38eaa4772f932e"
+            .to_string()
+    }
+
+    fn get_example_address() -> String {
+        "4AZRamrxefJEk3KeBP4FoLVBHwFxQ8KizeEaeDVtrM8D3w4mSmzxv1n2HAYshpaKH4GmWzNz6kJY7D884yBdrN5G6EZQrAR"
+            .to_string()
+    }
     #[test]
     fn should_generate_random_scalar() {
         let result = generate_random_scalar().unwrap();
@@ -227,4 +251,48 @@ mod tests {
             .unwrap();
         assert!(scalar_from_bytes == scalar);
     }
+
+    #[test]
+    fn should_convert_64_char_hex_string_to_32_byte_array() {
+        let result = convert_hex_string_to_32_byte_array(get_example_priv_sk())
+            .unwrap();
+        assert!(result.len() == 32);
+    }
+
+    #[test]
+    fn should_error_if_hex_key_too_long() {
+        let expected_error = "✘ Key length invalid!".to_string();
+        let mut long_hex_string = get_example_priv_sk();
+        long_hex_string.push('a');
+        long_hex_string.push('b');
+        match convert_hex_string_to_32_byte_array(long_hex_string) {
+            Err(AppError::Custom(e)) => assert!(e == expected_error),
+            Err(e) => panic!("Did not expect this error: {}", e),
+            Ok(_) => panic!("Should not have succeeded!")
+        }
+    }
+
+    #[test]
+    fn should_error_if_hex_key_too_short() {
+        let expected_error = "✘ Key length invalid!".to_string();
+        let mut short_hex_string = "c0ffee".to_string();
+        match convert_hex_string_to_32_byte_array(short_hex_string) {
+            Err(AppError::Custom(e)) => assert!(e == expected_error),
+            Err(e) => panic!("Did not expect this error: {}", e),
+            Ok(_) => panic!("Should not have succeeded!")
+        }
+    }
+
+    #[test]
+    fn should_error_if_hex_key_odd_length() {
+        let expected_error = hex::FromHexError::OddLength;
+        let mut long_hex_string = get_example_priv_sk();
+        long_hex_string.push('a');
+        match convert_hex_string_to_32_byte_array(long_hex_string) {
+            Err(AppError::HexError(e)) => assert!(e == expected_error),
+            Err(e) => panic!("Did not expect this error: {}", e),
+            Ok(_) => panic!("Should not have succeeded!")
+        }
+    }
+
 }
