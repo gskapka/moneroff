@@ -314,7 +314,13 @@ mod tests {
         convert_hex_string_to_scalar(get_example_priv_sk())
             .unwrap();
     }
+
+    #[test]
+    fn should_generate_priv_vk_from_priv_sk() {
         let result = convert_hex_string_to_scalar(get_example_priv_sk())
+            .and_then(|x| generate_priv_vk_from_priv_sk(x))
+            .and_then(convert_scalar_to_bytes)
             .unwrap();
+        assert!(hex::encode(result) == get_example_priv_vk());
     }
 }
