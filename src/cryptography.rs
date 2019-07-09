@@ -323,4 +323,16 @@ mod tests {
             .unwrap();
         assert!(hex::encode(result) == get_example_priv_vk());
     }
+
+    #[test]
+    fn should_hash_public_keys_with_prefix() {
+        let expected_bytes = [139, 87, 37, 191, 92, 201, 237, 245, 109, 192, 203, 124, 149, 58, 152, 44, 42, 25, 35, 13, 1, 208, 90, 97, 102, 231, 20, 166, 48, 7, 21, 106];
+        use crate::monero_keys::MoneroKeys;
+        let keys = MoneroKeys::from_existing_key(get_example_priv_sk())
+            .unwrap();
+        let dummy_prefix = [0xff];
+        let result = hash_public_keys_with_prefix(keys, dummy_prefix)
+            .unwrap();
+        assert!(expected_bytes == result);
+    }
 }
