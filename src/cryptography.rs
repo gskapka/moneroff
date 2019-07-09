@@ -74,6 +74,18 @@ pub fn convert_hex_string_to_scalar(priv_sk: String) -> Result<Scalar> {
         .and_then(convert_32_byte_array_to_scalar)
 }
 
+pub fn convert_hex_string_to_32_byte_array(hex: String) -> Result<Key> {
+    let decoded_hex = hex::decode(hex)?;
+    match decoded_hex.len() {
+        32 => {
+            let mut array = [0; 32];
+            array[..].copy_from_slice(&decoded_hex[..]);
+            Ok(array)
+        }
+        _ => Err(AppError::Custom("✘ Key length invalid!".to_string()))
+    }
+}
+
 pub fn generate_priv_vk_from_priv_sk(priv_sk: Scalar) -> Result<Scalar> {
     keccak256_hash_bytes(&priv_sk.to_bytes())
         .and_then(convert_keccak256_hash_to_scalar_mod_order)
@@ -94,7 +106,7 @@ pub fn concatenate_address(
     Ok(address_bytes)
 }
 
-pub fn hash_pub_keys_with_prefix(
+pub fn hash_public_keys_with_prefix(
     keys: MoneroKeys,
     prefix: [u8; 1]
 ) -> Result<Keccak256Hash> {
@@ -111,18 +123,6 @@ pub fn get_address_suffix_from_hash(hash: Keccak256Hash) -> Result<[u8; 4]> {
     let mut x = [0; 4];
     x.copy_from_slice(&hash[..4]);
     Ok(x)
-}
-
-pub fn convert_hex_string_to_32_byte_array(hex: String) -> Result<Key> {
-    let decoded_hex = hex::decode(hex)?;
-    match decoded_hex.len() {
-        32 => {
-            let mut array = [0; 32];
-            array[..].copy_from_slice(&decoded_hex[..]);
-            Ok(array)
-        }
-        _ => Err(AppError::Custom("✘ Key length invalid!".to_string()))
-    }
 }
 
 #[cfg(test)]
@@ -289,7 +289,7 @@ mod tests {
     #[test]
     fn should_error_if_hex_key_too_short() {
         let expected_error = "✘ Key length invalid!".to_string();
-        let mut short_hex_string = "c0ffee".to_string();
+        let short_hex_string = "c0ffee".to_string();
         match convert_hex_string_to_32_byte_array(short_hex_string) {
             Err(AppError::Custom(e)) => assert!(e == expected_error),
             Err(e) => panic!("Did not expect this error: {}", e),
@@ -311,6 +311,9 @@ mod tests {
 
     #[test]
     fn should_convert_32_char_hex_string_to_scalar() {
+        convert_hex_string_to_scalar(get_example_priv_sk())
+            .unwrap();
+    }
         let result = convert_hex_string_to_scalar(get_example_priv_sk())
             .unwrap();
     }
