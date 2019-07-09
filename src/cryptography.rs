@@ -335,4 +335,15 @@ mod tests {
             .unwrap();
         assert!(expected_bytes == result);
     }
+
+    #[test]
+    fn should_get_address_suffix_from_hash() {
+        let expected_bytes = [96, 136, 140, 130];
+        let dummy_hash = keccak256_hash_bytes(get_example_priv_sk().as_bytes())
+            .unwrap();
+        let result = get_address_suffix_from_hash(dummy_hash)
+            .unwrap();
+        println!("{:?}", result);
+        assert!(result == expected_bytes)
+    }
 }
