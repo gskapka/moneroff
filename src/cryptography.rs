@@ -346,4 +346,22 @@ mod tests {
         println!("{:?}", result);
         assert!(result == expected_bytes)
     }
+
+    #[test]
+    fn should_concatenate_address() {
+        use crate::monero_keys::MoneroKeys;
+        use cryptonote_base58::to_base58;
+        let keys = MoneroKeys::from_existing_key(get_example_priv_sk())
+            .unwrap();
+        let prefix = [0x12];
+        let hash = hash_public_keys_with_prefix(keys, prefix)
+            .unwrap();
+        let suffix = get_address_suffix_from_hash(hash)
+            .unwrap();
+        let address_bytes = concatenate_address(keys, prefix, suffix)
+            .unwrap();
+        let result = to_base58(address_bytes.to_vec())
+            .unwrap();
+        assert!(result == get_example_address());
+    }
 }
