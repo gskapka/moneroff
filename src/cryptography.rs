@@ -353,6 +353,8 @@ mod tests {
         use cryptonote_base58::to_base58;
         let keys = MoneroKeys::from_existing_key(get_example_priv_sk())
             .unwrap();
+        assert!(hex::encode(keys.get_pub_vk().unwrap()) == get_example_pub_vk());
+        assert!(hex::encode(keys.get_pub_sk().unwrap()) == get_example_pub_sk());
         let prefix = [0x12];
         let hash = hash_public_keys_with_prefix(keys, prefix)
             .unwrap();
