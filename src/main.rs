@@ -3,7 +3,6 @@
 
 mod types;
 mod error;
-mod constants;
 mod monero_keys;
 mod cryptography;
 
