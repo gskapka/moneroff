@@ -1,0 +1,16 @@
+[package]
+name = "moneroff"
+version = "0.1.0"
+authors = ["Greg Kapka <greg@kapka.co.uk>"]
+edition = "2018"
+
+[dependencies]
+rand = "0.6"
+hex = "0.3.2"
+docopt = "1.1.0"
+serde = "1.0.94"
+tiny-keccak = "1.5"
+curve25519-dalek = "1"
+serde_derive = "1.0.94"
+cryptonote-base58 = "0.1.2"
+num-bigint = { version = "0.2.2", features = ["rand"] }
