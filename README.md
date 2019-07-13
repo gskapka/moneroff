@@ -1,6 +1,24 @@
-## :troll_face: Moneroff
+## :trollface: Moneroff
 
-__❍__ An offline Monero key generator & transaction signer in Rust.
+__❍__ An offline Monero key generator & (soon to be) transaction signer in Rust.
+
+&nbsp;
+
+***
+
+### :wrench: Build it:
+
+__`❍ cargo +nightly build --release`__
+
+Note the use of nightly since we're using the __`try_trait`__ in order to unwrap options into Results and thus use the __`?`__ operator on both in the same fxn.
+
+&nbsp;
+
+***
+
+### :school_satchel: Test it:
+
+__`❍ cargo +nightly test`__
 
 &nbsp;
 
@@ -22,24 +40,31 @@ __❍__ An offline Monero key generator & transaction signer in Rust.
 
 ***
 
-### :wrench: Build it:
+### :black_nib: Monero Notes:
 
-__`cargo +nightly build --release`__
-Note the use of nightly since we're using the __`try_trait`__ in order to unwrap options into Results and thus use the __`?`__ operator on both in the same fxn.
+Monero uses the Edwards25519 Elliptic Curve:
+
+__`−x^2 + y^2 = 1 − (121665/121666) * x^2 * y^2`__
+
+...which has the chosen base-point G:
+
+__`G = (x, -4/5)`__
+
+The prime order __`l`__ of the curve is also chosen by the curve's authors as:
+
+__`l = 2^252 + 27742317777372353535851937790883648493`__
+
+… & so the maximum scalar for this curve is:
+
+__`7237005577332262213973186563042994240857116359379907606001950938285454250989`__
 
 &nbsp;
 
 ***
 
-### :school_satchel: Test it:
-
-__`cargo +nightly test`__
-
-***
-
 ### :nut_and_bolt: Resources:
 
-__`Monero Related`__
+__`Monero Related: `__
 
  - __[Zero to Monero PDF.](https://www.getmonero.org/library/Zero-to-Monero-1-0-0.pdf)__
  - __[Monero seed word list.](https://github.com/monero-project/monero/blob/master/src/mnemonics/english.h)__
