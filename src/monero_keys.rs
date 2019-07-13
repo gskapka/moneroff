@@ -11,13 +11,13 @@ use crate::types::{
 use crate::cryptography::{
     concatenate_address,
     convert_scalar_to_bytes,
-    hash_pub_keys_with_prefix,
+    hash_public_keys_with_prefix,
     convert_hex_string_to_scalar,
     get_address_suffix_from_hash,
     multiply_scalar_by_basepoint,
     generate_priv_vk_from_priv_sk,
-    convert_edwards_point_to_bytes,
     generate_random_scalar_mod_order,
+    convert_compressed_edwards_y_to_bytes,
 };
 
 use crate::error::AppError;
@@ -106,7 +106,7 @@ impl MoneroKeys {
             None => {
                 self.get_priv_sk_scalar()
                     .and_then(multiply_scalar_by_basepoint)
-                    .and_then(convert_edwards_point_to_bytes)
+                    .and_then(convert_compressed_edwards_y_to_bytes)
                     .and_then(|x| self.add_pub_sk_to_self(x))
                     .and_then(|x| x.get_pub_sk())
             }
@@ -119,7 +119,7 @@ impl MoneroKeys {
             None => {
                 self.get_priv_vk_scalar()
                     .and_then(multiply_scalar_by_basepoint)
-                    .and_then(convert_edwards_point_to_bytes)
+                    .and_then(convert_compressed_edwards_y_to_bytes)
                     .and_then(|x| self.add_pub_vk_to_self(x))
                     .and_then(|x| x.get_pub_vk())
             }
@@ -131,7 +131,7 @@ impl MoneroKeys {
             Some(address) => Ok(address),
             None => {
                 let prefix = [0x12];
-                hash_pub_keys_with_prefix(self, prefix)
+                hash_public_keys_with_prefix(self, prefix)
                     .and_then(get_address_suffix_from_hash)
                     .and_then(|suffix| concatenate_address(self, prefix, suffix))
                     .and_then(|address| self.add_address_to_self(address))
@@ -177,10 +177,10 @@ impl fmt::Display for MoneroKeys {
         write!(
             f,
             "{}{}{}{}{}",
-            priv_vk_for_display,
             priv_sk_for_display,
-            pub_vk_for_display,
+            priv_vk_for_display,
             pub_sk_for_display,
+            pub_vk_for_display,
             address_for_display
         )
     }
