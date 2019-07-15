@@ -6,11 +6,38 @@ __❍__ An offline Monero key generator & (soon to be) transaction signer in Rus
 
 ***
 
+### :beginner: Use it:
+```
+❍ Monero Key Generator ❍
+
+    Copyright Greg Kapka 2019
+    Questions: greg@kapka.co.uk
+
+Usage:  moneroff [-h | --help]
+        moneroff generate random
+        moneroff generate from <key>
+
+Commands:
+
+    generate random     ❍ Generates a random set of Monero keys
+    generate from <key> ❍ Generates a set of Monero keys from given private spend key.
+
+Options:
+
+    -h, --help          ❍ Show this message.
+    --key=<key>         ❍ A Monero private spend key in HEX format w/ NO prefix!.
+
+```
+
+&nbsp;
+
+***
+
 ### :wrench: Build it:
 
 __`❍ cargo +nightly build --release`__
 
-Note the use of nightly since we're using the __`try_trait`__ in order to unwrap options into Results and thus use the __`?`__ operator on both in the same fxn.
+Note the use of __` + nightly`__ since we're using the __`try_trait`__ in order to unwrap options into Results and thus use the __`?`__ operator on both in the same fxn.
 
 &nbsp;
 
@@ -30,7 +57,9 @@ __`❍ cargo +nightly test`__
 - [x] Add CLI arg support w/ docopt.
 - [x] Add key set generation from existing.
 - [x] Make sensible key type so that sizes are enforced!
+- [ ] Add CI to run the rust tests. (Can even use gitlab CI on github!)
 - [ ] Have way to save and load from encrypted key file(s).
+- [ ] Use clear-on-drop w/ the struct to clear it from memory when finished w/.
 - [ ] how does monero encrypt the files (if it does?)
 - [ ] Make work w/ multiple keys
 - [ ] Use inquirerjs style menu (rustbox?) for picking which key to sign with.
