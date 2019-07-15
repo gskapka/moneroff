@@ -16,7 +16,15 @@ use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
 
 type Result<T> = result::Result<T, AppError>;
 
-pub fn generate_random_scalar() -> Result<Scalar> {
+fn multiply_scalar_by_basepoint(scalar: Scalar) -> Result<CompressedEdwardsY> {
+    Ok(compress_edwards_point(&scalar * &ED25519_BASEPOINT_TABLE)?)
+}
+
+fn convert_compressed_edwards_y_to_bytes(x: CompressedEdwardsY) -> Result<Key> {
+    Ok(x.to_bytes())
+}
+
+fn generate_random_scalar() -> Result<Scalar> {
     Ok(Scalar::random(&mut thread_rng()))
 }
 
@@ -24,8 +32,18 @@ fn convert_key_to_scalar_mod_order(key: Key) -> Result<Scalar> {
     Ok(Scalar::from_bytes_mod_order(key))
 }
 
+fn compress_edwards_point(e_point: EdwardsPoint) -> Result<CompressedEdwardsY> {
+    Ok(e_point.compress())
+}
+
+pub fn convert_private_key_to_public_key(key: Scalar) -> Result<Key> {
+    multiply_scalar_by_basepoint(key)
+        .and_then(convert_compressed_edwards_y_to_bytes)
+}
+
 pub fn generate_random_scalar_mod_order() -> Result<Scalar> {
-    generate_random_scalar().and_then(reduce_scalar_mod_l)
+    generate_random_scalar()
+        .and_then(reduce_scalar_mod_l)
 }
 
 pub fn convert_keccak256_hash_to_scalar_mod_order(hash: Keccak256Hash) -> Result<Scalar> {
@@ -40,20 +58,8 @@ pub fn keccak256_hash_bytes(bytes: &[u8]) -> Result<Keccak256Hash> {
     Ok(res)
 }
 
-pub fn convert_compressed_edwards_y_to_bytes(x: CompressedEdwardsY) -> Result<Key> {
-    Ok(x.to_bytes())
-}
-
 pub fn convert_scalar_to_bytes(x: Scalar) -> Result<Key> {
     Ok(x.to_bytes())
-}
-
-fn compress_edwards_point(e_point: EdwardsPoint) -> Result<CompressedEdwardsY> {
-    Ok(e_point.compress())
-}
-
-pub fn multiply_scalar_by_basepoint(scalar: Scalar) -> Result<CompressedEdwardsY> {
-    Ok(compress_edwards_point(&scalar * &ED25519_BASEPOINT_TABLE)?)
 }
 
 pub fn reduce_scalar_mod_l(scalar: Scalar) -> Result<Scalar> {
@@ -365,4 +371,25 @@ mod tests {
             .unwrap();
         assert!(result == get_example_address());
     }
-}
+
+    #[test]
+    fn should_convert_private_spend_key_to_public_correctly() {
+        let priv_sk = convert_hex_string_to_scalar(get_example_priv_sk())
+            .unwrap();
+        let expected_pub_key = hex::decode(get_example_pub_sk())
+            .unwrap();
+        let result = convert_private_key_to_public_key(priv_sk)
+            .unwrap();
+        assert!(result.to_vec() == expected_pub_key);
+    }
+
+    #[test]
+    fn should_convert_private_view_key_to_public_correctly() {
+        let priv_vk = convert_hex_string_to_scalar(get_example_priv_vk())
+            .unwrap();
+        let expected_pub_key = hex::decode(get_example_pub_vk())
+            .unwrap();
+        let result = convert_private_key_to_public_key(priv_vk)
+            .unwrap();
+        assert!(result.to_vec() == expected_pub_key);
+    }

@@ -14,10 +14,9 @@ use crate::cryptography::{
     hash_public_keys_with_prefix,
     convert_hex_string_to_scalar,
     get_address_suffix_from_hash,
-    multiply_scalar_by_basepoint,
     generate_priv_vk_from_priv_sk,
     generate_random_scalar_mod_order,
-    convert_compressed_edwards_y_to_bytes,
+    convert_private_key_to_public_key,
 };
 
 use crate::error::AppError;
@@ -97,8 +96,7 @@ impl MoneroKeys {
             Some(pub_sk) => Ok(pub_sk),
             None => {
                 self.get_priv_sk_scalar()
-                    .and_then(multiply_scalar_by_basepoint)
-                    .and_then(convert_compressed_edwards_y_to_bytes)
+                    .and_then(convert_private_key_to_public_key)
                     .and_then(|x| self.add_pub_sk_to_self(x))
                     .and_then(|x| x.get_pub_sk())
             }
@@ -110,8 +108,7 @@ impl MoneroKeys {
             Some(pub_vk) => Ok(pub_vk),
             None => {
                 self.get_priv_vk_scalar()
-                    .and_then(multiply_scalar_by_basepoint)
-                    .and_then(convert_compressed_edwards_y_to_bytes)
+                    .and_then(convert_private_key_to_public_key)
                     .and_then(|x| self.add_pub_vk_to_self(x))
                     .and_then(|x| x.get_pub_vk())
             }
