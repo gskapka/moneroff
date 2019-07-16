@@ -7,7 +7,6 @@ use std::result;
 use rand::thread_rng;
 use crate::error::AppError;
 use curve25519_dalek::scalar::Scalar;
-use crate::keccak::keccak256_hash_bytes;
 use curve25519_dalek::constants::ED25519_BASEPOINT_TABLE;
 use crate::key_cryptography::convert_hex_string_to_32_byte_array;
 use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
@@ -55,7 +54,12 @@ pub fn convert_32_byte_array_to_scalar(byte_arr: Key) -> Result<Scalar> {
     match Scalar::from_canonical_bytes(byte_arr) {
         Some(canonical_scalar) => Ok(canonical_scalar),
         None => Err(
-            AppError::Custom("✘ Not a point on the edwards curve!".to_string())
+            AppError::Custom(
+                format!(
+                    "✘ Key Error!\n{}",
+                    "✘ Key does not encode a valid point on the edwards curve!"
+                )
+            )
         )
     }
 }

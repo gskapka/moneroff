@@ -24,16 +24,33 @@ pub fn convert_private_key_to_public_key(key: Scalar) -> Result<Key> {
         .and_then(convert_compressed_edwards_y_to_bytes)
 }
 
+
 pub fn convert_hex_string_to_32_byte_array(hex: String) -> Result<Key> {
     let decoded_hex = hex::decode(hex)?;
+    let key_message = "✘ A Monero private key is 32 bytes long.".to_string();
     match decoded_hex.len() {
         32 => {
             let mut array = [0; 32];
             array[..].copy_from_slice(&decoded_hex[..]);
             Ok(array)
         }
-        _ => Err(AppError::Custom("✘ Key length invalid!".to_string()))
-    }
+        0..32 => Err(
+                AppError::Custom(
+                    format!(
+                        "✘ Hex Error: Key length too short!\n{}",
+                        key_message
+                    )
+                )
+            ),
+        _ => Err(
+                AppError::Custom(
+                    format!(
+                        "✘ Hex Error: Key length too long!\n{}",
+                        key_message
+                    )
+                )
+            )
+        }
 }
 
 pub fn generate_priv_vk_from_priv_sk(priv_sk: Scalar) -> Result<Scalar> {
