@@ -102,6 +102,7 @@ mod tests {
         convert_scalar_to_bytes,
     };
 
+
     fn get_example_priv_sk() -> String {
         "d3d21c30a27b2a2b64df410adbadc69eefb2be8e0c357d6a42f19638b343a606"
             .to_string()
@@ -158,12 +159,12 @@ mod tests {
 
     #[test]
     fn should_error_if_hex_key_too_long() {
-        let expected_error = "✘ Key length invalid!".to_string();
+        let expected_error = "too long";
         let mut long_hex_string = get_example_priv_sk();
         long_hex_string.push('a');
         long_hex_string.push('b');
         match convert_hex_string_to_32_byte_array(long_hex_string) {
-            Err(AppError::Custom(e)) => assert!(e == expected_error),
+            Err(AppError::Custom(e)) => assert!(e.contains(expected_error)),
             Err(e) => panic!("Did not expect this error: {}", e),
             Ok(_) => panic!("Should not have succeeded!")
         }
@@ -171,10 +172,10 @@ mod tests {
 
     #[test]
     fn should_error_if_hex_key_too_short() {
-        let expected_error = "✘ Key length invalid!".to_string();
+        let expected_error = "too short";
         let short_hex_string = "c0ffee".to_string();
         match convert_hex_string_to_32_byte_array(short_hex_string) {
-            Err(AppError::Custom(e)) => assert!(e == expected_error),
+            Err(AppError::Custom(e)) => assert!(e.contains(expected_error)),
             Err(e) => panic!("Did not expect this error: {}", e),
             Ok(_) => panic!("Should not have succeeded!")
         }
