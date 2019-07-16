@@ -16,12 +16,18 @@ pub enum AppError {
 impl fmt::Display for AppError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let msg = match *self {
-            AppError::Custom(ref msg) => msg.clone(),
-            AppError::HexError(ref e) => format!("Hex error: {}", e),
-            AppError::NoneError(ref e) => format!("Option error: {:?}", e),
-            AppError::FmtError(ref e) => format!("Formatter error: {}", e),
-            AppError::Base58Error(ref e) => format!("Base58 error: {:?}", e),
-            AppError::ParseBigIntError(ref e) => format!("BigUint error: {}", e),
+            AppError::Custom(ref msg) =>
+                format!("\n{}\n", msg),
+            AppError::HexError(ref e) =>
+                format!("\n✘ Hex Error!\n✘ {}\n", e),
+            AppError::ParseBigIntError(ref e) =>
+                format!("\n✘ BigUint Error!\n✘ {}\n", e),
+            AppError::Base58Error(ref e) =>
+                format!("\n✘ Base58 Error!\n✘ {:?}\n", e),
+            AppError::NoneError(ref e) =>
+                format!("\n✘ Option Error!\n✘ {:?}\n", e),
+            AppError::FmtError(ref e) =>
+                format!("\n✘ Formatter Error!\n✘ {}\n", e),
         };
         f.write_fmt(format_args!("{}", msg))
     }
@@ -29,7 +35,7 @@ impl fmt::Display for AppError {
 
 impl Error for AppError {
     fn description(&self) -> &str {
-        "Program Error"
+        "\n✘ Program Error!\n"
     }
 }
 
