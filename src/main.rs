@@ -1,5 +1,6 @@
 #![feature(try_trait)]
 #![feature(rustc_private)]
+#![feature(exclusive_range_pattern)]
 
 mod types;
 mod error;
