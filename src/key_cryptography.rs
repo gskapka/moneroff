@@ -4,80 +4,24 @@ use crate::types::{
     Keccak256Hash,
 };
 
+use crate::edwards_curve_cryptography::{
+    multiply_scalar_by_basepoint,
+    convert_compressed_edwards_y_to_bytes,
+    convert_keccak256_hash_to_scalar_mod_order,
+};
+
 use hex;
 use std::result;
-use rand::thread_rng;
-use tiny_keccak::Keccak;
 use crate::error::AppError;
 use crate::monero_keys::MoneroKeys;
 use curve25519_dalek::scalar::Scalar;
-use curve25519_dalek::constants::ED25519_BASEPOINT_TABLE;
-use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
+use crate::keccak::keccak256_hash_bytes;
 
 type Result<T> = result::Result<T, AppError>;
-
-fn multiply_scalar_by_basepoint(scalar: Scalar) -> Result<CompressedEdwardsY> {
-    Ok(compress_edwards_point(&scalar * &ED25519_BASEPOINT_TABLE)?)
-}
-
-fn convert_compressed_edwards_y_to_bytes(x: CompressedEdwardsY) -> Result<Key> {
-    Ok(x.to_bytes())
-}
-
-fn generate_random_scalar() -> Result<Scalar> {
-    Ok(Scalar::random(&mut thread_rng()))
-}
-
-fn convert_key_to_scalar_mod_order(key: Key) -> Result<Scalar> {
-    Ok(Scalar::from_bytes_mod_order(key))
-}
-
-fn compress_edwards_point(e_point: EdwardsPoint) -> Result<CompressedEdwardsY> {
-    Ok(e_point.compress())
-}
 
 pub fn convert_private_key_to_public_key(key: Scalar) -> Result<Key> {
     multiply_scalar_by_basepoint(key)
         .and_then(convert_compressed_edwards_y_to_bytes)
-}
-
-pub fn generate_random_scalar_mod_order() -> Result<Scalar> {
-    generate_random_scalar()
-        .and_then(reduce_scalar_mod_l)
-}
-
-pub fn convert_keccak256_hash_to_scalar_mod_order(hash: Keccak256Hash) -> Result<Scalar> {
-    convert_key_to_scalar_mod_order(hash)
-}
-
-pub fn keccak256_hash_bytes(bytes: &[u8]) -> Result<Keccak256Hash> {
-    let mut res: Keccak256Hash = [0; 32];
-    let mut keccak256 = Keccak::new_keccak256();
-    keccak256.update(bytes);
-    keccak256.finalize(&mut res);
-    Ok(res)
-}
-
-pub fn convert_scalar_to_bytes(x: Scalar) -> Result<Key> {
-    Ok(x.to_bytes())
-}
-
-pub fn reduce_scalar_mod_l(scalar: Scalar) -> Result<Scalar> {
-    Ok(scalar.reduce())
-}
-
-pub fn convert_32_byte_array_to_scalar(byte_arr: Key) -> Result<Scalar> {
-    match Scalar::from_canonical_bytes(byte_arr) {
-        Some(canonical_scalar) => Ok(canonical_scalar),
-        None => Err(
-            AppError::Custom("✘ Not a point on the edwards curve!".to_string())
-        )
-    }
-}
-
-pub fn convert_hex_string_to_scalar(priv_sk: String) -> Result<Scalar> {
-    convert_hex_string_to_32_byte_array(priv_sk)
-        .and_then(convert_32_byte_array_to_scalar)
 }
 
 pub fn convert_hex_string_to_32_byte_array(hex: String) -> Result<Key> {
@@ -136,6 +80,10 @@ pub fn get_address_suffix_from_hash(hash: Keccak256Hash) -> Result<[u8; 4]> {
 mod tests {
     use super::*;
     use crate::monero_keys::generate_monero_keys_from;
+    use crate::edwards_curve_cryptography::{
+        convert_hex_string_to_scalar,
+        convert_scalar_to_bytes,
+    };
 
     fn get_example_priv_sk() -> String {
         "d3d21c30a27b2a2b64df410adbadc69eefb2be8e0c357d6a42f19638b343a606"
@@ -161,116 +109,27 @@ mod tests {
         "4AZRamrxefJEk3KeBP4FoLVBHwFxQ8KizeEaeDVtrM8D3w4mSmzxv1n2HAYshpaKH4GmWzNz6kJY7D884yBdrN5G6EZQrAR"
             .to_string()
     }
+
     #[test]
-    fn should_generate_random_scalar() {
-        let result = generate_random_scalar().unwrap();
-        assert!(result.to_bytes().len() == 32);
-        assert!(result.is_canonical());
+    fn should_convert_private_spend_key_to_public_correctly() {
+        let priv_sk = convert_hex_string_to_scalar(get_example_priv_sk())
+            .unwrap();
+        let expected_pub_key = hex::decode(get_example_pub_sk())
+            .unwrap();
+        let result = convert_private_key_to_public_key(priv_sk)
+            .unwrap();
+        assert!(result.to_vec() == expected_pub_key);
     }
 
     #[test]
-    fn should_convert_32_byte_arr_to_scalar_mod_order() {
-        let scalar = generate_random_scalar().unwrap();
-        let result = convert_key_to_scalar_mod_order(scalar.to_bytes()).unwrap();
-        assert!(result.to_bytes().len() == 32);
-        assert!(result.is_canonical() == true);
-    }
-    #[test]
-    fn should_generate_random_scalar_mod_order() {
-        let result = generate_random_scalar_mod_order().unwrap();
-        assert!(result.is_canonical());
-    }
-
-    #[test]
-    fn should_keccak256_hash_bytes() {
-        let bytes = [0x01, 0x02];
-        let result = keccak256_hash_bytes(&bytes)
+    fn should_convert_private_view_key_to_public_correctly() {
+        let priv_vk = convert_hex_string_to_scalar(get_example_priv_vk())
             .unwrap();
-        assert!(result.len() == 32);
-    }
-
-    #[test]
-    fn should_convert_keccak256_hash_to_scalar_mod_order() {
-        let bytes = [0x01, 0x02];
-        let result = keccak256_hash_bytes(&bytes)
-            .and_then(convert_keccak256_hash_to_scalar_mod_order)
+        let expected_pub_key = hex::decode(get_example_pub_vk())
             .unwrap();
-        assert!(result.to_bytes().len() == 32);
-        assert!(result.is_canonical() == true)
-    }
-
-    #[test]
-    fn should_compress_edwards_point_correctly() {
-        use curve25519_dalek::constants::ED25519_BASEPOINT_POINT;
-        let result = compress_edwards_point(ED25519_BASEPOINT_POINT).unwrap();
-        assert!(result.to_bytes().len() == 32);
-    }
-
-    #[test]
-    fn should_multiply_scalar_by_basepoint() {
-        generate_random_scalar()
-            .and_then(reduce_scalar_mod_l)
-            .and_then(multiply_scalar_by_basepoint)
+        let result = convert_private_key_to_public_key(priv_vk)
             .unwrap();
-    }
-
-    #[test]
-    fn should_reduce_scalar_mod_l() {
-        let non_canonical_scalar = Scalar::from_bits([0xff; 32]);
-        assert!(!non_canonical_scalar.is_canonical());
-        let canonical_scalar = reduce_scalar_mod_l(non_canonical_scalar)
-            .unwrap();
-        assert!(canonical_scalar.is_canonical());
-    }
-
-    #[test]
-    fn should_convert_scalar_to_bytes() {
-        let scalar = generate_random_scalar_mod_order()
-            .unwrap();
-        let bytes = convert_scalar_to_bytes(scalar)
-            .unwrap();
-        let scalar_from_bytes = Scalar::from_canonical_bytes(bytes)
-            .unwrap();
-        assert!(scalar == scalar_from_bytes);
-        assert!(scalar.is_canonical());
-    }
-
-    #[test]
-    fn should_convert_edwards_point_to_bytes() {
-        let scalar = generate_random_scalar_mod_order()
-            .unwrap();
-        let expected_bytes = convert_scalar_to_bytes(scalar.clone())
-            .unwrap();
-        let compressed_point = CompressedEdwardsY::from_slice(&expected_bytes);
-        let result = convert_compressed_edwards_y_to_bytes(compressed_point)
-            .unwrap();
-        assert!(result == expected_bytes);
-    }
-
-    #[test]
-    fn should_convert_32_byte_array_to_scalar() {
-        let scalar = generate_random_scalar()
-            .unwrap();
-        let bytes = convert_scalar_to_bytes(scalar)
-            .unwrap();
-        assert!(bytes.len() == 32);
-        let scalar_from_bytes = convert_32_byte_array_to_scalar(bytes)
-            .unwrap();
-        assert!(scalar_from_bytes == scalar);
-    }
-
-    #[test]
-    fn should_fail_to_convert_non_canonical_32_byte_array_to_scalar() {
-        let expected_error = "✘ Not a point on the edwards curve!".to_string();
-        let non_canonical_scalar = Scalar::from_bits([0xff; 32]);
-        let bytes = convert_scalar_to_bytes(non_canonical_scalar)
-            .unwrap();
-        assert!(bytes.len() == 32);
-        match convert_32_byte_array_to_scalar(bytes) {
-            Err(AppError::Custom(e)) => assert!(e == expected_error),
-            Err(e) => panic!("Did not expect this error: {}", e),
-            Ok(_) => panic!("Should not have succeeded!")
-        }
+        assert!(result.to_vec() == expected_pub_key);
     }
 
     #[test]
@@ -314,12 +173,6 @@ mod tests {
             Err(e) => panic!("Did not expect this error: {}", e),
             Ok(_) => panic!("Should not have succeeded!")
         }
-    }
-
-    #[test]
-    fn should_convert_32_char_hex_string_to_scalar() {
-        convert_hex_string_to_scalar(get_example_priv_sk())
-            .unwrap();
     }
 
     #[test]
@@ -371,25 +224,4 @@ mod tests {
             .unwrap();
         assert!(result == get_example_address());
     }
-
-    #[test]
-    fn should_convert_private_spend_key_to_public_correctly() {
-        let priv_sk = convert_hex_string_to_scalar(get_example_priv_sk())
-            .unwrap();
-        let expected_pub_key = hex::decode(get_example_pub_sk())
-            .unwrap();
-        let result = convert_private_key_to_public_key(priv_sk)
-            .unwrap();
-        assert!(result.to_vec() == expected_pub_key);
-    }
-
-    #[test]
-    fn should_convert_private_view_key_to_public_correctly() {
-        let priv_vk = convert_hex_string_to_scalar(get_example_priv_vk())
-            .unwrap();
-        let expected_pub_key = hex::decode(get_example_pub_vk())
-            .unwrap();
-        let result = convert_private_key_to_public_key(priv_vk)
-            .unwrap();
-        assert!(result.to_vec() == expected_pub_key);
-    }
+}

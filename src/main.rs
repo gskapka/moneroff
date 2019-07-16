@@ -3,9 +3,11 @@
 
 mod types;
 mod error;
+mod keccak;
 mod monero_keys;
-mod cryptography;
+mod key_cryptography;
 mod cli_arg_executor;
+mod edwards_curve_cryptography;
 
 extern crate serde;
 #[macro_use] extern crate serde_derive;

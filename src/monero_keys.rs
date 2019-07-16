@@ -8,15 +8,18 @@ use crate::types::{
     Address
 };
 
-use crate::cryptography::{
+use crate::key_cryptography::{
     concatenate_address,
-    convert_scalar_to_bytes,
     hash_public_keys_with_prefix,
-    convert_hex_string_to_scalar,
     get_address_suffix_from_hash,
     generate_priv_vk_from_priv_sk,
-    generate_random_scalar_mod_order,
     convert_private_key_to_public_key,
+};
+
+use crate::edwards_curve_cryptography::{
+    convert_scalar_to_bytes,
+    convert_hex_string_to_scalar,
+    generate_random_scalar_mod_order,
 };
 
 use crate::error::AppError;
