@@ -19,11 +19,11 @@ use crate::cli_arg_executor::{
     execute_based_on_cli_args
 };
 
-fn main() -> () {
+fn main() {
     match Docopt::new(USAGE_INFO)
         .and_then(|d| d.deserialize())
         .map(execute_based_on_cli_args) {
             Ok(_) => (),
             Err(e) => e.exit()
-        }
+        };
 }

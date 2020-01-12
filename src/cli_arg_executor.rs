@@ -26,7 +26,7 @@ Commands:
 Options:
 
     -h, --help          ❍ Show this message.
-    --key=<key>         ❍ A Monero private spend key in HEX format w/ NO prefix!.
+    <key>               ❍ A Monero private spend key in HEX format w/ NO prefix!.
 
 ";
 
